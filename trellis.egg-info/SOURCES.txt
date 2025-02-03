@@ -1,0 +1,8 @@
+LICENSE
+README.md
+setup.py
+trellis.egg-info/PKG-INFO
+trellis.egg-info/SOURCES.txt
+trellis.egg-info/dependency_links.txt
+trellis.egg-info/entry_points.txt
+trellis.egg-info/top_level.txt
