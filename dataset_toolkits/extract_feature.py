@@ -25,7 +25,7 @@ def get_data(frames, sha256):
 
         def worker(view):
             image_path = os.path.join(
-                opt.output_dir, "renders", sha256, view["file_path"]
+                opt.output_dir, "renders", str(sha256), view["file_path"]
             )
             try:
                 image = Image.open(image_path)
