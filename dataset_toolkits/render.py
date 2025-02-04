@@ -27,7 +27,7 @@ def _install_blender():
 
 
 def _render(file_path, sha256, output_dir, num_views):
-    output_folder = os.path.join(output_dir, "renders", str(sha256))
+    output_folder = os.path.join(output_dir, "renders", sha256)
 
     # Build camera {yaw, pitch, radius, fov}
     yaws = []
@@ -131,7 +131,7 @@ if __name__ == "__main__":
     # filter out objects that are already processed
     for sha256 in copy.copy(metadata["sha256"].values):
         if os.path.exists(
-            os.path.join(opt.output_dir, "renders", str(sha256), "transforms.json")
+            os.path.join(opt.output_dir, "renders", sha256, "transforms.json")
         ):
             records.append({"sha256": sha256, "rendered": True})
             metadata = metadata[metadata["sha256"] != sha256]

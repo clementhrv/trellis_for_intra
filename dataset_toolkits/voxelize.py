@@ -13,7 +13,7 @@ import utils3d
 
 def _voxelize(file, sha256, output_dir):
     mesh = o3d.io.read_triangle_mesh(
-        os.path.join(output_dir, "renders", str(sha256), "mesh.ply")
+        os.path.join(output_dir, "renders", sha256, "mesh.ply")
     )
     # clamp vertices to the range [-0.5, 0.5]
     vertices = np.clip(np.asarray(mesh.vertices), -0.5 + 1e-6, 0.5 - 1e-6)

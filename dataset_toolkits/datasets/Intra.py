@@ -1,7 +1,7 @@
 import os
 import argparse
 import pandas as pd
-
+import hashlib
 
 def add_args(parser: argparse.ArgumentParser):
     pass
@@ -35,7 +35,7 @@ def generate_metadata(output_dir, root_folder, **kwargs):
                 split.append(direct)
                 classe_data.append(cls_name)
 
-    sha256 = [str(i) for i in range(len(file_paths))]
+    sha256 = [hashlib.sha256(f.encode()).hexdigest() for f in file_paths]
     local_path = [os.path.relpath(f, output_dir) for f in file_paths]
 
     metadata = pd.DataFrame(
