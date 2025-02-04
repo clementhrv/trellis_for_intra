@@ -1,8 +1,0 @@
-Statistics:
-  - Number of assets: 1
-  - Number of assets downloaded: 1
-  - Number of assets rendered: 1
-  - Number of assets voxelized: 1
-  - Number of assets with image features extracted:
-    - dinov2_vitl14_reg: 0
-  - Number of assets with image conditions: 0

@@ -3,11 +3,19 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
+
+#My own ignore
 *.csv
 *.glb
 /trellis-env
 /tmp
 *.png
+/datasets
+
+
+
+
+
 # User-specific files
 *.rsuser
 *.suo

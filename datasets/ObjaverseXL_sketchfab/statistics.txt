@@ -1,7 +1,0 @@
-Statistics:
-  - Number of assets: 168307
-  - Number of assets downloaded: 105
-  - Number of assets rendered: 4
-  - Number of assets voxelized: 4
-  - Number of assets with captions: 167638
-  - Number of assets with image conditions: 0
