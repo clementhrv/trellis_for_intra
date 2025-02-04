@@ -160,8 +160,8 @@ if __name__ == "__main__":
                 saver_executor.submit(saver, sha256, pack)
 
             saver_executor.shutdown(wait=True)
-    except:
-        print("Error happened during processing.")
+    except Exception as e:
+        print(f"Error processing objects: {e}")
 
     records = pd.DataFrame.from_records(records)
     records.to_csv(
