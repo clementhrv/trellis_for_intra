@@ -1,8 +1,8 @@
 set -e 
 set -x 
 
-export DATASET_NAME=Intra_1
-export DATASET_SOURCE=Intra3D_1
+export DATASET_NAME=Intra
+export DATASET_SOURCE=Intra3D
 export OUTPUT_DIR=datasets/Intra_1
 export ROOT_FOLDER=Intra3D_1
 export RANK=0
