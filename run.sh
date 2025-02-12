@@ -3,8 +3,8 @@ set -x
 
 export DATASET_NAME=Intra
 export DATASET_SOURCE=Intra3D
-export OUTPUT_DIR=datasets/Data_real
-export ROOT_FOLDER=Data_real
+export OUTPUT_DIR=datasets/Intra3D_part_3
+export ROOT_FOLDER=Intra3D_part_3
 export RANK=0
 export WORLD_SIZE=1600
 export MAX_WORKERS=6
