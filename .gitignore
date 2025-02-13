@@ -7,12 +7,15 @@
 #My own ignore
 *.csv
 *.glb
-/trellis-env
+/trellis_intra_env
 /tmp
 *.png
 /datasets
-
-
+/datasets_in
+/datasets_out
+*npz
+/wandb
+*ckpt
 
 
 

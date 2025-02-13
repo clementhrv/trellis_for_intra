@@ -1,3 +1,5 @@
+#!/bin/sh
+
 # Read Arguments
 TEMP=`getopt -o h --long help,new-env,basic,xformers,flash-attn,diffoctreerast,vox2seq,spconv,mipgaussian,kaolin,nvdiffrast,demo -n 'setup.sh' -- "$@"`
 

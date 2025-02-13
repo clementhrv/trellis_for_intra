@@ -12,18 +12,42 @@ from functools import partial
 from subprocess import DEVNULL, call
 import numpy as np
 from utils import sphere_hammersley_sequence
+import subprocess
+import urllib.request
 
 
-BLENDER_LINK = 'https://download.blender.org/release/Blender3.0/blender-3.0.1-linux-x64.tar.xz'
-BLENDER_INSTALLATION_PATH = '/tmp'
-BLENDER_PATH = f'{BLENDER_INSTALLATION_PATH}/blender-3.0.1-linux-x64/blender'
+BLENDER_LINK = "https://download.blender.org/release/Blender3.6/blender-3.6.5-windows-x64.zip"  # Met à jour le lien
+BLENDER_INSTALLATION_PATH = os.path.join(os.getenv("USERPROFILE"), "blender_install")
+BLENDER_ZIP_PATH = os.path.join(BLENDER_INSTALLATION_PATH, "blender.zip")
+BLENDER_EXTRACTED_PATH = os.path.join(BLENDER_INSTALLATION_PATH, "blender-3.6.5-windows-x64")
+BLENDER_PATH = os.path.join(BLENDER_EXTRACTED_PATH, "blender.exe")
 
 def _install_blender():
     if not os.path.exists(BLENDER_PATH):
-        os.system('sudo apt-get update')
-        os.system('sudo apt-get install -y libxrender1 libxi6 libxkbcommon-x11-0 libsm6')
-        os.system(f'wget {BLENDER_LINK} -P {BLENDER_INSTALLATION_PATH}')
-        os.system(f'tar -xvf {BLENDER_INSTALLATION_PATH}/blender-3.0.1-linux-x64.tar.xz -C {BLENDER_INSTALLATION_PATH}')
+        print("Téléchargement de Blender...")
+
+        os.makedirs(BLENDER_INSTALLATION_PATH, exist_ok=True)
+
+        headers = {"User-Agent": "Mozilla/5.0"}
+        response = requests.get(BLENDER_LINK, headers=headers, stream=True)
+
+        if response.status_code == 200:
+            with open(BLENDER_ZIP_PATH, "wb") as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+
+            print("Extraction de Blender...")
+            with zipfile.ZipFile(BLENDER_ZIP_PATH, "r") as zip_ref:
+                zip_ref.extractall(BLENDER_INSTALLATION_PATH)
+
+            print(f"Blender installé à : {BLENDER_PATH}")
+        else:
+            print(f"Erreur {response.status_code}: Impossible de télécharger Blender.")
+
+    else:
+        print(f"Blender est déjà installé à : {BLENDER_PATH}")
+
+    return BLENDER_PATH
 
 
 def _render(file_path, sha256, output_dir, num_views):
