@@ -13,7 +13,7 @@
 /datasets
 /datasets_in
 /datasets_out
-*npz
+/datasets_classification
 /wandb
 *ckpt
 
