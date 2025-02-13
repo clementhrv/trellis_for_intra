@@ -39,6 +39,3 @@ python dataset_toolkits/build_metadata.py ${DATASET_NAME} --output_dir ${OUTPUT_
 python dataset_toolkits/encode_latent.py --output_dir ${OUTPUT_DIR}
 python dataset_toolkits/build_metadata.py ${DATASET_NAME} --output_dir ${OUTPUT_DIR} --root_folder ${ROOT_FOLDER}
 
-# render condition images
-python dataset_toolkits/render_cond.py ${DATASET_NAME} --output_dir ${OUTPUT_DIR}
-python dataset_toolkits/build_metadata.py ${DATASET_NAME} --output_dir ${OUTPUT_DIR} --root_folder ${ROOT_FOLDER}

@@ -21,8 +21,22 @@ class LightningModuleClassification(L.LightningModule):
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
         self.param = parameters
-        
-        self.model = ClassificationPointNetP2()
+
+        model_type = parameters["model"]["type"]
+
+        model_kwargs ={
+            "node_input_size": parameters["model"]["node_input_size"],
+            "dim_model": parameters["model"]["dim_model"],
+            "output_size": parameters["model"]["output_size"],
+            "number_of_connections": parameters["dataset"]["number_of_connections"]
+        }
+
+        if model_type =="pn2":
+            self.model = ClassificationPointNetP2(**model_kwargs) 
+        elif model_type == "mlp":
+            self.model = ClassificationModel(**model_kwargs)
+        else : 
+            raise ValueError(f"Model type {model_type} not supported.")
 
         self.loss = torch.nn.BCELoss()
 

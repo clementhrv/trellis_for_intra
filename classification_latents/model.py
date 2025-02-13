@@ -8,13 +8,15 @@ from classification_latents.layers import build_mlp
 
 class ClassificationModel(nn.Module):
     def __init__(
-            self
+            self, 
+            dim_model: list = [[8, 16, 8, 1], [1024, 256, 64, 16, 2]], 
+            **kwargs
     ):
         super(ClassificationModel, self).__init__()
 
-        self.mlp1 = MLP([8, 16, 8, 1], act="ReLU", dropout=0.4)
+        self.mlp1 = MLP(dim_model[0], act="ReLU", dropout=0.4)
 
-        self.mlp2 = MLP([1024, 256, 64, 16, 2], act="ReLU", dropout=0.4)
+        self.mlp2 = MLP(dim_model[1], act="ReLU", dropout=0.4)
         self.softmax = nn.Softmax(dim=1)
 
     def forward(self, graph: Batch):

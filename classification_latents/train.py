@@ -71,26 +71,22 @@ def main(argv):
     model_save_path = FLAGS.model_save_path
     use_edge_feature = not FLAGS.no_edge_feature
 
-    preprocessing = None 
 
     # Get training and validation datasets
     train_dataset = ClassificationDataset(
         root_folder=parameters["dataset"]["obj_folder"],
         meta_path=parameters["dataset"]["meta_path"],
-        preprocessing=preprocessing,
         switch_to_val=False,
     )
 
     val_dataset = ClassificationDataset(
         root_folder=parameters["dataset"]["obj_folder"],
         meta_path=parameters["dataset"]["meta_path"],
-        preprocessing=preprocessing,
         switch_to_val=True,
     )
     test_dataset = ClassificationDataset(
         root_folder=parameters["dataset"]["obj_folder"],
         meta_path=parameters["dataset"]["meta_path"],
-        preprocessing=preprocessing,
         switch_to_test=True,
     )
 

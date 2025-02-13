@@ -13,9 +13,7 @@ class ClassificationDataset(Dataset):
         root_folder,
         meta_path: str,
         switch_to_val: bool = False,
-        switch_to_test: bool = False,
-        preprocessing=None,
-        
+        switch_to_test: bool = False,        
     ):
         
         if switch_to_val:
@@ -42,7 +40,6 @@ class ClassificationDataset(Dataset):
         with open(meta_path, "r") as fp:
             self.meta = json.loads(fp.read())
 
-        self.preprocessing = preprocessing
 
     def __len__(self):
         return len(self.file_paths)
@@ -66,10 +63,6 @@ class ClassificationDataset(Dataset):
             pos=torch.tensor(coords, dtype=torch.float32),
             y=None,
         )
-        
-
-        if self.preprocessing:
-            data = self.preprocessing(data)
         
         # Set the label
         if label == 1:
