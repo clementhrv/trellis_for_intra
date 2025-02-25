@@ -1,10 +1,10 @@
 set -e 
 set -x 
 
-export DATASET_NAME=Intra
-export DATASET_SOURCE=Intra3D
-export OUTPUT_DIR=datasets/Intra3D_part_3
-export ROOT_FOLDER=Intra3D_part_3
+export DATASET_NAME=AnxPlore
+export DATASET_SOURCE=AnxPlore
+export OUTPUT_DIR=dataset_output
+export ROOT_FOLDER=surface_dataset
 export RANK=0
 export WORLD_SIZE=1600
 export MAX_WORKERS=6
