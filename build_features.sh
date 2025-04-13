@@ -1,13 +1,13 @@
 set -e 
 set -x 
 
-export DATASET_NAME=AnxPlore
-export DATASET_SOURCE=AnxPlore
+export DATASET_NAME=ModelNet
+export DATASET_SOURCE=ModelNet
 export OUTPUT_DIR=dataset_output
-export ROOT_FOLDER=surface_dataset
+export ROOT_FOLDER=modelnet_dataset
 export RANK=0
 export WORLD_SIZE=1600
-export MAX_WORKERS=6
+export MAX_WORKERS=10
 
 # initially build meta data of the specified dataset
 python dataset_toolkits/build_metadata.py ${DATASET_NAME} --output_dir ${OUTPUT_DIR} --root_folder ${ROOT_FOLDER}
