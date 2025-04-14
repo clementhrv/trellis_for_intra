@@ -1,120 +1,121 @@
 import os
 import urllib.request
 import zipfile
-import tarfile
 from tqdm import tqdm
 
-def download_and_extract(url, extract_to='.'):
+
+
+def download_modelnet(dataset_name='ModelNet40', root='datasets'):
     """
-    Télécharge et extrait un fichier depuis une URL.
-
-    Parameters:
-    url (str): L'URL du fichier à télécharger.
-    extract_to (str): Le répertoire où extraire les fichiers.
+    Télécharge et dézippe le dataset ModelNet.
     """
-    filename = os.path.join(extract_to, url.split('/')[-1])
-    urllib.request.urlretrieve(url, filename)
+    os.makedirs(root, exist_ok=True)
+    url = f"http://modelnet.cs.princeton.edu/{dataset_name}.zip"
+    zip_path = os.path.join(root, f"{dataset_name}.zip")
+    extract_path = os.path.join(root, dataset_name)
 
-    if filename.endswith('.zip'):
-        with zipfile.ZipFile(filename, 'r') as zip_ref:
-            zip_ref.extractall(extract_to)
-    elif filename.endswith('.tar.gz'):
-        with tarfile.open(filename, 'r:gz') as tar_ref:
-            tar_ref.extractall(extract_to)
+    if not os.path.exists(extract_path):
+        print(f"Téléchargement de {dataset_name}...")
+        urllib.request.urlretrieve(url, zip_path)
+        print("Décompression...")
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(root)
+        print("Suppression de l'archive...")
+        os.remove(zip_path)
+    else:
+        print(f"{dataset_name} déjà présent dans {root}")
 
-    os.remove(filename)
+    return extract_path
 
-def parse_off_file(filepath):
+def read_off(file_path):
     """
-    Parse un fichier .off et retourne les sommets et les faces.
-
-    Parameters:
-    filepath (str): Le chemin vers le fichier .off.
-
-    Returns:
-    vertices (list of tuples): Liste des sommets.
-    faces (list of tuples): Liste des faces.
+    Lecture robuste d’un fichier OFF : retourne sommets et faces.
     """
-    with open(filepath, 'r') as file:
-        lines = file.readlines()
+    with open(file_path, 'r') as f:
+        lines = f.readlines()
 
-    if lines[0].strip() != 'OFF':
-        raise ValueError("Le fichier n'est pas au format OFF.")
+    # Enlever les lignes vides
+    lines = [line.strip() for line in lines if line.strip()]
 
-    parts = lines[1].strip().split()
-    num_vertices = int(parts[0])
-    num_faces = int(parts[1])
+    if lines[0] != 'OFF':
+        if lines[0].startswith('OFF'):
+            # Cas où tout est collé sur la 1ère ligne : OFF 123 456 0
+            parts = lines[0].replace('OFF', '').strip().split()
+            if len(parts) >= 2:
+                counts = list(map(int, parts[:2]))
+                vertex_lines = lines[1:1 + counts[0]]
+                face_lines = lines[1 + counts[0]:1 + counts[0] + counts[1]]
+            else:
+                raise ValueError(f"Header invalide dans le fichier {file_path}")
+        else:
+            raise ValueError(f"Fichier OFF invalide : {file_path}")
+    else:
+        # Cas normal : OFF + dimensions sur la 2ème ligne
+        counts = list(map(int, lines[1].split()))
+        vertex_lines = lines[2:2 + counts[0]]
+        face_lines = lines[2 + counts[0]:2 + counts[0] + counts[1]]
 
-    vertices = []
+    vertices = [list(map(float, v.split())) for v in vertex_lines]
     faces = []
 
-    for line in lines[2:2 + num_vertices]:
-        parts = line.strip().split()
-        vertices.append((float(parts[0]), float(parts[1]), float(parts[2])))
-
-    for line in lines[2 + num_vertices:2 + num_vertices + num_faces]:
-        parts = line.strip().split()
-        faces.append((int(parts[1]), int(parts[2]), int(parts[3])))
+    for face in face_lines:
+        parts = list(map(int, face.split()))
+        if parts[0] == 3:
+            faces.append(parts[1:4])
 
     return vertices, faces
 
-def save_as_obj(vertices, faces, filepath):
+def write_obj(vertices, faces, output_path):
     """
-    Sauvegarde les sommets et les faces dans un fichier .obj.
-
-    Parameters:
-    vertices (list of tuples): Liste des sommets.
-    faces (list of tuples): Liste des faces.
-    filepath (str): Le chemin où sauvegarder le fichier .obj.
+    Écriture des données dans un fichier .obj.
     """
-    with open(filepath, 'w') as f:
+    with open(output_path, 'w') as f:
         for v in vertices:
             f.write(f"v {v[0]} {v[1]} {v[2]}\n")
         for face in faces:
             f.write(f"f {face[0]+1} {face[1]+1} {face[2]+1}\n")
 
-def process_modelnet_dataset(root, name='40', train=True):
+def convert_off_to_obj(modelnet_path, output_path, sampling_ratio=6, part=0):
     """
-    Télécharge, extrait et lit les fichiers .off du jeu de données ModelNet.
-
-    Parameters:
-    root (str): Répertoire racine où stocker les fichiers.
-    name (str): Nom du jeu de données ('10' pour ModelNet10, '40' pour ModelNet40).
-    train (bool): Si True, télécharge le jeu de données d'entraînement, sinon le jeu de données de test.
+    Conversion de fichiers .off en .obj, en ne prenant qu'1 fichier sur `sampling_ratio`.
     """
-    os.makedirs(root, exist_ok=True)
+    class_names = [d for d in os.listdir(modelnet_path) if os.path.isdir(os.path.join(modelnet_path, d))]
 
-    if name == '10':
-        url = 'http://modelnet.cs.princeton.edu/ModelNet10.zip'
-    elif name == '40':
-        url = 'http://modelnet.cs.princeton.edu/ModelNet40.zip'
-    else:
-        raise ValueError("Le nom du jeu de données doit être '10' ou '40'.")
+    for class_name in tqdm(class_names, desc="Conversion des classes"):
+        class_path = os.path.join(modelnet_path, class_name)
 
-    download_and_extract(url, extract_to=root)
+        for split in ['train', 'test']:
+            split_path = os.path.join(class_path, split)
+            if not os.path.isdir(split_path):
+                continue
 
-    dataset_dir = os.path.join(root, f'ModelNet{name}')
-    subset_dir = os.path.join(dataset_dir, 'train' if train else 'test')
-    obj_dir = os.path.join(root, 'obj_files')
-    os.makedirs(obj_dir, exist_ok=True)
+            output_class_dir = os.path.join(output_path, split, class_name)
+            os.makedirs(output_class_dir, exist_ok=True)
 
-    file_count = 0
+            off_files = [f for f in os.listdir(split_path) if f.endswith('.off')]
+            off_files.sort()  # pour garder un ordre stable
 
-    for class_dir in tqdm(os.listdir(subset_dir), desc="Processing files"):
-        class_path = os.path.join(subset_dir, class_dir)
-        for off_file in os.listdir(class_path):
-            if off_file.endswith('.off'):
-                file_count += 1
-                off_file_path = os.path.join(class_path, off_file)
-                vertices, faces = parse_off_file(off_file_path)
-                print(f"Processed {off_file_path}: {len(vertices)} vertices, {len(faces)} faces")
+            for idx, filename in enumerate(off_files):
+                if idx % sampling_ratio != part:
+                    continue  # On garde 1 fichier sur `sampling_ratio`
 
-                # Convertir un fichier sur six en .obj
-                if file_count % 6 == 0:
-                    obj_file_path = os.path.join(obj_dir, f"{off_file.replace('.off', '.obj')}")
-                    save_as_obj(vertices, faces, obj_file_path)
-                    print(f"Saved {obj_file_path} as .obj")
+                off_path = os.path.join(split_path, filename)
+                obj_filename = filename.replace('.off', '.obj')
+                obj_path = os.path.join(output_class_dir, obj_filename)
 
-# Exemple d'utilisation
-root_directory = 'modelnet_dataset'
-process_modelnet_dataset(root=root_directory, name='40', train=True)
+                vertices, faces = read_off(off_path)
+                write_obj(vertices, faces, obj_path)
+
+def main():
+    dataset_name = 'ModelNet40'  # ou 'ModelNet10'
+    root_dir = 'datasets'
+    output_dir = 'ModelNet_OBJ'
+    SAMPLING_RATIO  = 6  # 1 fichier sur 6
+    PART_OF_DATASET = 0 # number to change between 0 and 5 if SAMPLING_RATIO = 6 to select the part of the dataset to download
+
+    modelnet_path = download_modelnet(dataset_name, root=root_dir)
+    convert_off_to_obj(modelnet_path, output_path=output_dir, sampling_ratio=SAMPLING_RATIO, part =PART_OF_DATASET)
+    print(f"\nConversion terminée ! 1 fichier sur {SAMPLING_RATIO} a été converti dans : {output_dir}")
+
+if __name__ == '__main__':
+    main()

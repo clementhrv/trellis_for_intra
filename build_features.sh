@@ -4,7 +4,7 @@ set -x
 export DATASET_NAME=ModelNet
 export DATASET_SOURCE=ModelNet
 export OUTPUT_DIR=dataset_output
-export ROOT_FOLDER=modelnet_dataset
+export ROOT_FOLDER=ModelNet_OBJ
 export RANK=0
 export WORLD_SIZE=1600
 export MAX_WORKERS=10
