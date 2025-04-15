@@ -1,13 +1,13 @@
 set -e 
 set -x 
 
-export DATASET_NAME=ModelNet
-export DATASET_SOURCE=ModelNet
+export DATASET_NAME=IntraAnn
+export DATASET_SOURCE=IntraAnn
 export OUTPUT_DIR=dataset_output
-export ROOT_FOLDER=ModelNet_OBJ
+export ROOT_FOLDER=dataset_intra_segmentation
 export RANK=0
 export WORLD_SIZE=1600
-export MAX_WORKERS=10
+export MAX_WORKERS=6
 
 # initially build meta data of the specified dataset
 python dataset_toolkits/build_metadata.py ${DATASET_NAME} --output_dir ${OUTPUT_DIR} --root_folder ${ROOT_FOLDER}
