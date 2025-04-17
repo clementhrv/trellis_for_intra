@@ -11,10 +11,10 @@ from lightning.pytorch.loggers import WandbLogger
 from loguru import logger
 from torch_geometric.loader import DataLoader
 
-from classification_latents.classification_dataset import ClassificationDataset
-from classification_latents.parse_parameters import get_num_workers
-from classification_latents.lightning_module import LightningModuleClassification
-from classification_latents.utils.progressbar import ColabProgressBar
+from segmentation_latents.segmentation_dataset import SegmentationDataset
+from segmentation_latents.parse_parameters import get_num_workers
+from segmentation_latents.lightning_module import LightningModuleClassification
+from segmentation_latents.utils.progressbar import ColabProgressBar
 
 warnings.filterwarnings(
     "ignore", ".*Trying to infer the `batch_size` from an ambiguous collection.*"
@@ -70,19 +70,21 @@ def main(argv):
     use_edge_feature = not FLAGS.no_edge_feature
 
 
+    # XXX Change the names and the parameters to the correct ones
+
     # Get training and validation datasets
-    train_dataset = ClassificationDataset(
+    train_dataset = SegmentationDataset(
         root_folder=parameters["dataset"]["obj_folder"],
         meta_path=parameters["dataset"]["meta_path"],
         switch_to_val=False,
     )
 
-    val_dataset = ClassificationDataset(
+    val_dataset = SegmentationDataset(
         root_folder=parameters["dataset"]["obj_folder"],
         meta_path=parameters["dataset"]["meta_path"],
         switch_to_val=True,
     )
-    test_dataset = ClassificationDataset(
+    test_dataset = SegmentationDataset(
         root_folder=parameters["dataset"]["obj_folder"],
         meta_path=parameters["dataset"]["meta_path"],
         switch_to_test=True,

@@ -15,6 +15,7 @@
 /datasets_out
 /datasets_classification
 /wandb
+/116cases_trellis_dataset_output
 *ckpt
 
 
