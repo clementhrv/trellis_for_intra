@@ -265,9 +265,7 @@ class SegmentationPointNetP2(torch.nn.Module):
         x, pos, batch = fp_out[-1]
 
         x = self.mlp(x)
-
-        return self.softmax(x)
-
-        # return self.mlp(x).log_softmax(dim=-1)
+        
+        return x.log_softmax(dim=1)
 
 

@@ -1,5 +1,6 @@
 import lightning as L
 import torch
+from segmentation_latents.model import SegmentationPointNetP2
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, f1_score

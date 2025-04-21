@@ -183,8 +183,6 @@ def main(argv):
         val_dataloaders=valid_dataloader,
     )
 
-    # Start testing
-    logger.success("Starting testing")
 
 
 if __name__ == "__main__":
