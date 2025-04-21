@@ -148,7 +148,10 @@ class SegmentationDataset(Dataset):
                 x, y, z, nx, ny, nz, label = parts
                 points.append([float(x), float(y), float(z)])
                 normals.append([float(nx), float(ny), float(nz)])
-                labels.append(int(label))
+                if label == "0":
+                    labels.append(0)
+                else:
+                    labels.append(1)
 
         points = np.array(points)
 

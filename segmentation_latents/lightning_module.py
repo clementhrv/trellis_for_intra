@@ -117,26 +117,30 @@ class LightningModuleClassification(L.LightningModule):
                 plt.close()
 
     def on_validation_epoch_end(self):
-        # Convert outputs to numpy arrays
-        predicteds = self.val_step_outputs.cpu().numpy()
-        targets = self.val_step_targets.cpu().numpy()
+        # Convert outputs to CPU numpy arrays
+        predicteds = self.val_step_outputs.cpu()
+        targets = self.val_step_targets.cpu()
 
-        # Get the predicted class by taking the argmax of the softmax output
-        predicted_classes = torch.argmax(torch.tensor(predicteds), axis=1)
-        target_classes = targets
-
+        # Get predicted class indices
+        predicted_classes = torch.argmax(predicteds, dim=1)
 
         # Histograms
+        predicteds_np = predicteds.numpy()
+        targets_np = targets.numpy()
+        predicted_classes_np = predicted_classes.numpy()
+
         for i in range(self.output_size):
             plt.figure(figsize=(10, 6))
             for j in range(self.output_size):
-                plt.hist(
-                    predicteds[:, i][target_classes == j],
-                    bins=40,
-                    range=(0, 1),
-                    alpha=0.7,
-                    label=f"True Class {j}"
-                )
+                mask = targets_np == j
+                if np.any(mask):
+                    plt.hist(
+                        predicteds_np[:, i][mask],
+                        bins=40,
+                        range=(0, 1),
+                        alpha=0.7,
+                        label=f"True Class {j}"
+                    )
             plt.ylabel("Frequency")
             plt.xlabel(f"Predicted Probabilities for Class {i}")
             plt.title(f"Validation Distribution - Class {i}")
@@ -147,30 +151,29 @@ class LightningModuleClassification(L.LightningModule):
             wandb.log({f"Histogram Class {i}": wandb.Image(filename)})
             plt.close()
 
-        # Ensure both are tensors
-        predicted_classes_tensor = torch.tensor(predicted_classes, device=self.device)
-        target_classes_tensor = torch.tensor(target_classes, device=self.device)
+        # Create unified class list based on BOTH predictions and targets
+        all_class_indices = torch.cat([predicted_classes, targets]).unique().cpu().numpy()
+        all_class_indices = np.sort(all_class_indices)  # Optional for consistency
+        class_names = [f"Class {int(i)}" for i in all_class_indices]
 
-        # Get all unique class indices from predictions and targets
-        all_class_indices = torch.cat([predicted_classes_tensor, target_classes_tensor]).unique().cpu().numpy()
-        class_names = [f"Class {i}" for i in all_class_indices]
+        # Ensure inputs to wandb are numpy arrays
+        filtered_preds = predicted_classes_np[np.isin(predicted_classes_np, all_class_indices)]
+        filtered_targets = targets_np[np.isin(targets_np, all_class_indices)]
 
-
-        # Confusion Matrix
         wandb.log({"confusion_matrix": wandb.plot.confusion_matrix(
-            y_true=target_classes,
-            preds=predicted_classes,
-            class_names=class_names,
+            y_true=filtered_targets,
+            preds=filtered_preds,
+            class_names=class_names
         )})
 
-
-        f1 = f1_score(target_classes, predicted_classes, average="weighted")
+        # Compute F1 score
+        f1 = f1_score(targets_np, predicted_classes_np, average="weighted")
         self.log("val_f1_score", f1, on_step=False, on_epoch=True, prog_bar=True)
 
+        # Reset for next epoch
+        self.val_step_outputs = torch.empty(0, self.output_size, device=self.device)
+        self.val_step_targets = torch.empty(0, dtype=torch.long, device=self.device)
 
-        # Clear stored outputs
-        self.val_step_outputs.clear()
-        self.val_step_targets.clear()
 
 
     def configure_optimizers(self):
