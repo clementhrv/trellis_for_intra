@@ -1,7 +1,7 @@
 {
     "dataset": {
         "extension": "xdmf",
-        "obj_folder": "datasets_intra_segmentation/training",
+        "obj_folder": "dataset_intra_segmentation/training",
         "meta_path": "segmentation_latents/segmentation_meta.json",
         "khop": 1,
         "number_of_sample": 1024,

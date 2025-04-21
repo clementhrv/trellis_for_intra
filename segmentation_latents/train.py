@@ -84,11 +84,6 @@ def main(argv):
         meta_path=parameters["dataset"]["meta_path"],
         switch_to_val=True,
     )
-    test_dataset = SegmentationDataset(
-        root_folder=parameters["dataset"]["obj_folder"],
-        meta_path=parameters["dataset"]["meta_path"],
-        switch_to_test=True,
-    )
 
     num_workers = get_num_workers(param=parameters, default_num_workers=num_workers)
 
@@ -101,12 +96,6 @@ def main(argv):
 
     valid_dataloader_kwargs = {
         "dataset": val_dataset,
-        "shuffle": False,
-        "batch_size": 1,
-        "num_workers": num_workers,
-    }
-    test_dataloader_kwargs = {
-        "dataset": test_dataset,
         "shuffle": False,
         "batch_size": 1,
         "num_workers": num_workers,
@@ -126,17 +115,10 @@ def main(argv):
                 "persistent_workers": True,
             }
         )
-        test_dataloader_kwargs.update(
-            {
-                "prefetch_factor": prefetch_factor,
-                "persistent_workers": True,
-            }
-        )
 
     # Create DataLoaders
     train_dataloader = DataLoader(**train_dataloader_kwargs)
     valid_dataloader = DataLoader(**valid_dataloader_kwargs)
-    test_dataloader = DataLoader(**test_dataloader_kwargs)
 
     # Define or resume model
     num_steps = num_epochs * len(train_dataloader)
@@ -203,10 +185,6 @@ def main(argv):
 
     # Start testing
     logger.success("Starting testing")
-    trainer.test(
-        model=lightning_module,
-        dataloaders=test_dataloader,
-    )
 
 
 if __name__ == "__main__":

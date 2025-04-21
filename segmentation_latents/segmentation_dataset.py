@@ -21,8 +21,6 @@ class SegmentationDataset(Dataset):
         
         if switch_to_val:
             root_folder = root_folder.replace("training", "validation")
-        elif switch_to_test:
-            root_folder = root_folder.replace("training", "test")
 
         self.npzfile_paths = []
         self.adfile_paths = []

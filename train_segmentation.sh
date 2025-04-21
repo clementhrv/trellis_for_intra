@@ -1,4 +1,4 @@
-python -m classification_latents.train \
+python -m segmentation_latents.train \
             --training_parameters_path=segmentation_latents/segmentation.json \
             --project_name='PNP_seg_test' \
             --project_folder='trellis_test_2'\
