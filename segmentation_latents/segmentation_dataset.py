@@ -37,7 +37,7 @@ class SegmentationDataset(Dataset):
 
 
     def __len__(self):
-        return len(self.file_paths)
+        return len(self.adfile_paths)
     
     def get_encoding(self, file_name: str):
         file_name = file_name.replace("-_norm.ad", "_full.npz")
@@ -49,8 +49,14 @@ class SegmentationDataset(Dataset):
         return feats, coords
     
     def scale_pos(self, cloud, coords):
-        c_min, c_max = cloud.pos.min(axis=0), cloud.pos.max(axis=0)
-        pc_min, pc_max = coords.min(axis=0), coords.max(axis=0)
+        c_min, _ = cloud.pos.min(dim=0)
+        c_max, _ = cloud.pos.max(dim=0)
+
+        if isinstance(coords, np.ndarray):
+            coords = torch.tensor(coords, dtype=torch.float32)
+
+        pc_min, _ = coords.min(dim=0)
+        pc_max, _ = coords.max(dim=0)
 
         scale = (c_max - c_min) / (pc_max - pc_min)
         shift = c_min - pc_min * scale
@@ -63,16 +69,16 @@ class SegmentationDataset(Dataset):
         os.makedirs(output_dir, exist_ok=True)
 
         cloud_pos = cloud.pos
-        coords_scaled = coords_scaled.cpu().numpy()
-        cloud_pos = cloud_pos.cpu().numpy()
+        coords_scaled = coords_scaled.detach().cpu().tolist()
+        cloud_pos = cloud_pos.detach().cpu().tolist()
 
         cloud_vtk_path = os.path.join(output_dir, f"{cloud.name}_cloud.vtk")
-        cloud_cells = np.arrange(cloud_pos.shape[0]).reshape(-1, 1)
-        cloud_mesh = meshio.Mesh(points =cloud_pos, cells={"vertex": cloud_cells})
+        cloud_cells = np.arange(len(cloud_pos)).reshape(-1, 1)
+        cloud_mesh = meshio.Mesh(points=cloud_pos, cells={"vertex": cloud_cells})
         meshio.write(cloud_vtk_path, cloud_mesh)
 
         coords_vtk_path = os.path.join(output_dir, f"{cloud.name}_coords.vtk")
-        coords_cells = np.arange(coords_scaled.shape[0]).reshape(-1, 1)
+        coords_cells = np.arange(len(coords_scaled)).reshape(-1, 1)
         coords_mesh = meshio.Mesh(points=coords_scaled, cells={"vertex": coords_cells})
         meshio.write(coords_vtk_path, coords_mesh)
 
@@ -80,12 +86,13 @@ class SegmentationDataset(Dataset):
         print(f"Cloud points saved to {cloud_vtk_path}")
 
 
+
     def add_encoding(self, cloud, feats, coords, K=6):
         cloud_pos = cloud.pos
 
         edge_index = knn(coords, cloud_pos, k=K)
 
-        F=feats.shape[1]
+        F = feats.shape[1]
         cloud_features = torch.zeros((cloud_pos.shape[0], F), dtype=torch.float32)
 
         for i in range(cloud_pos.shape[0]):
@@ -110,8 +117,8 @@ class SegmentationDataset(Dataset):
 
         pos_cloud = cloud.pos
 
-        cloud_centroid = pos_cloud.mean(axis=0)
-        coords_centroid = coords_scaled.mean(axis=0)
+        cloud_centroid = pos_cloud.mean(dim=0)
+        coords_centroid = coords_scaled.mean(dim=0)
 
         translation_vector = cloud_centroid - coords_centroid
         coords_scaled[:, 2] += translation_vector[2]
@@ -129,7 +136,6 @@ class SegmentationDataset(Dataset):
 
 
     def __getitem__(self, idx):
-        
         adfile_path = self.adfile_paths[idx]
 
         points = []
@@ -159,6 +165,8 @@ class SegmentationDataset(Dataset):
             y=torch.tensor(labels, dtype=torch.float32),
         )
 
+        data.name = os.path.basename(adfile_path).replace(".ad", "")  # Needed for saving files
+
         data = self.add_new_features(data, idx)
 
         samplepoints = random.sample(range(data.x.shape[0]), 1024)
@@ -168,4 +176,3 @@ class SegmentationDataset(Dataset):
         data.y = data.y[samplepoints]
     
         return data
-
