@@ -149,9 +149,9 @@ class SegmentationDataset(Dataset):
                 points.append([float(x), float(y), float(z)])
                 normals.append([float(nx), float(ny), float(nz)])
                 if label == "0":
-                    labels.append(0)
+                    labels.append(int(0))
                 else:
-                    labels.append(1)
+                    labels.append(int(1))
 
         points = np.array(points)
 
@@ -168,7 +168,7 @@ class SegmentationDataset(Dataset):
 
         data.name = os.path.basename(adfile_path).replace(".ad", "")  # Needed for saving files
 
-        samplepoints = random.sample(range(data.pos.shape[0]), 1024)
+        samplepoints = random.sample(range(data.pos.shape[0]), 512)
 
         data.x = data.x[samplepoints]
         data.pos = data.pos[samplepoints]

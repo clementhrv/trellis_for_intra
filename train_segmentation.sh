@@ -2,9 +2,9 @@ python -m segmentation_latents.train \
             --training_parameters_path=segmentation_latents/segmentation.json \
             --project_name='PNP_seg_test' \
             --project_folder='trellis_test_2'\
-            --num_epochs=50 \
+            --num_epochs=100 \
             --init_lr=0.001 \
-            --batch_size=16 \
+            --batch_size=2 \
             --warmup=500\
             --num_workers=0 \
             --prefetch_factor=0 \

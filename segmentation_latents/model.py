@@ -69,8 +69,6 @@ class PointNetClassifier(torch.nn.Module):
 
         self.classifier = Linear(hidden_size, output_size)
 
-        self.softmax = nn.Softmax(dim=1)
-
     def forward(self, graph=Batch) -> Tensor:
 
         for layer in self.processer_list:
@@ -82,7 +80,7 @@ class PointNetClassifier(torch.nn.Module):
         x = self.classifier(x)  # [num_examples, output_channels]
 
         # Classifier:
-        return self.softmax(x)
+        return x.log_softmax(dim=1)
 
 # The PointNet++ segmentation model and layer
 class SAModule(torch.nn.Module):
