@@ -46,8 +46,8 @@ class LightningModuleClassification(L.LightningModule):
         self.num_steps = num_steps
         self.warmup = warmup
 
-        self.val_step_outputs = torch.empty((0, parameters["model"]["output_size"])).to(device)
-        self.val_step_targets = torch.empty((0, parameters["model"]["output_size"])).to(device)
+        self.val_step_outputs = torch.empty(0, self.output_size, device=device)
+        self.val_step_targets = torch.empty(0, device=device, dtype=torch.long)
 
     
     def forward(self, graph: Batch):
@@ -55,7 +55,7 @@ class LightningModuleClassification(L.LightningModule):
 
     def training_step(self, batch: Batch):
         pred = self.model(batch).to(torch.float32)
-        target = batch.y.to(torch.float32)
+        target = batch.y.to(torch.long).to(pred.device) 
 
         loss = self.loss(pred, target)
         self.log("train_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
@@ -65,12 +65,10 @@ class LightningModuleClassification(L.LightningModule):
 
         with torch.no_grad():
             pred = self.model(batch).to(torch.float32)
-        target = batch.y.to(torch.float32)
-        self.val_step_outputs = torch.cat((self.val_step_outputs, pred.cpu()), dim=0)
-        self.val_step_targets = torch.cat((self.val_step_targets, target.cpu()), dim=0)
+        target = batch.y.to(torch.long).to(pred.device)  
 
-        pred = pred.type(torch.FloatTensor)
-        target = target.type(torch.FloatTensor)
+        self.val_step_outputs = torch.cat((self.val_step_outputs, pred), dim=0)
+        self.val_step_targets = torch.cat((self.val_step_targets, target), dim=0)
 
         val_loss = self.loss(pred, target)
 
@@ -120,12 +118,12 @@ class LightningModuleClassification(L.LightningModule):
 
     def on_validation_epoch_end(self):
         # Convert outputs to numpy arrays
-        predicteds = torch.cat(self.val_step_outputs, dim=0).numpy()
-        targets = torch.cat(self.val_step_targets, dim=0).numpy()
+        predicteds = self.val_step_outputs.cpu().numpy()
+        targets = self.val_step_targets.cpu().numpy()
 
         # Get the predicted class by taking the argmax of the softmax output
-        predicted_classes = np.argmax(predicteds, axis=1)
-        target_classes = np.argmax(targets, axis=1)
+        predicted_classes = torch.argmax(torch.tensor(predicteds), axis=1)
+        target_classes = targets
 
 
         # Histograms
@@ -149,11 +147,20 @@ class LightningModuleClassification(L.LightningModule):
             wandb.log({f"Histogram Class {i}": wandb.Image(filename)})
             plt.close()
 
+        # Ensure both are tensors
+        predicted_classes_tensor = torch.tensor(predicted_classes, device=self.device)
+        target_classes_tensor = torch.tensor(target_classes, device=self.device)
+
+        # Get all unique class indices from predictions and targets
+        all_class_indices = torch.cat([predicted_classes_tensor, target_classes_tensor]).unique().cpu().numpy()
+        class_names = [f"Class {i}" for i in all_class_indices]
+
+
         # Confusion Matrix
         wandb.log({"confusion_matrix": wandb.plot.confusion_matrix(
             y_true=target_classes,
             preds=predicted_classes,
-            class_names=[f"Class {i}" for i in range(self.output_size)],
+            class_names=class_names,
         )})
 
 

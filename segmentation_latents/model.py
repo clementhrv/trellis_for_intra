@@ -153,7 +153,7 @@ class SegmentationPointNetP2(torch.nn.Module):
             [128, 128, 128],],
             [128, 128, 128]
         ],
-        output_size: int = 2,
+        output_size: int = 3,
         number_of_connections: int = 16,
         **kwargs
     ):
@@ -183,7 +183,7 @@ class SegmentationPointNetP2(torch.nn.Module):
                     0.4,
                     build_mlp(
                         dim_model[0][i - 1][-1] + 3,
-                        dim_model[0][i][0],
+                        dim_model[0][i][1],
                         dim_model[0][i][-1],
                         len(dim_model[0][i]),
                     ),
@@ -195,9 +195,9 @@ class SegmentationPointNetP2(torch.nn.Module):
         self.sa_modules.append(
             GlobalSAModule(
                 build_mlp(
-                    dim_model[0][-3][-1] + 3,
-                    dim_model[0][-2][0],
-                    dim_model[0][-2][-1],
+                    dim_model[0][-2][-1] + 3,
+                    dim_model[0][-1][1],
+                    dim_model[0][-1][-1],
                     len(dim_model[0][-1]),
                 )
             )
@@ -209,7 +209,7 @@ class SegmentationPointNetP2(torch.nn.Module):
             FPModule(
                 1,
                 build_mlp(
-                    dim_model[0][-2][-1] + dim_model[1][0][0],
+                    dim_model[0][-1][-1] + dim_model[1][0][0],
                     dim_model[1][0][1],
                     dim_model[1][0][-1],
                     len(dim_model[1][0]),
@@ -258,11 +258,11 @@ class SegmentationPointNetP2(torch.nn.Module):
         sa0_out = [(data.x, data.pos, data.batch)]
 
         for i in range(len(self.sa_modules)):
-            sa0_out.append = self.sa_modules[i](*sa0_out[i])
+            sa0_out.append(self.sa_modules[i](*sa0_out[i]))
 
         fp_out = [sa0_out[-1]]
         for i in range(len(self.fp_modules)):
-            fp_out.append = self.fp_modules[i](*fp_out[i], *sa0_out[-2 - i])
+            fp_out.append(self.fp_modules[i](*fp_out[i], *sa0_out[-2 - i]))
 
         x, pos, batch = fp_out[-1]
 

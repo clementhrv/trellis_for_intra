@@ -123,15 +123,13 @@ class SegmentationDataset(Dataset):
         translation_vector = cloud_centroid - coords_centroid
         coords_scaled[:, 2] += translation_vector[2]
 
-        self.plot_rescaled(cloud, coords_scaled)
-
         new_features = self.add_encoding(cloud, feats, coords_scaled, K=6)
 
         return new_features
     
     def add_new_features(self, cloud, index):
         features = self.get_new_features(cloud, index)
-        cloud.x = features
+        cloud.x = torch.cat((cloud.x, features), dim=1)
         return cloud
 
 
@@ -167,12 +165,12 @@ class SegmentationDataset(Dataset):
 
         data.name = os.path.basename(adfile_path).replace(".ad", "")  # Needed for saving files
 
-        data = self.add_new_features(data, idx)
-
-        samplepoints = random.sample(range(data.x.shape[0]), 1024)
+        samplepoints = random.sample(range(data.pos.shape[0]), 1024)
 
         data.x = data.x[samplepoints]
         data.pos = data.pos[samplepoints]
         data.y = data.y[samplepoints]
-    
+
+        data = self.add_new_features(data, idx)
+
         return data
