@@ -73,46 +73,6 @@ class LightningModuleClassification(L.LightningModule):
         val_loss = self.loss(pred, target)
         self.log("validation_loss", val_loss, on_step=True, on_epoch=True, prog_bar=True)
 
-        # Visualisation : on convertit en probabilités pour la lisibilité
-        pred_probs = torch.exp(pred)
-        positions = batch.pos.cpu().numpy()
-        predicted_classes = torch.argmax(pred_probs, dim=1).cpu().numpy()
-
-        for i in range(len(batch.ptr) - 1):
-            start_idx, end_idx = batch.ptr[i].item(), batch.ptr[i + 1].item()
-            graph_positions = positions[start_idx:end_idx]
-            graph_predicted_classes = predicted_classes[start_idx:end_idx]
-
-            views = [
-                ("default", None, None),
-                ("top", 90, 0),
-                ("side", 0, 0),
-                ("front", 0, 90),
-            ]
-
-            for view_name, elev, azim in views:
-                fig = plt.figure(figsize=(10, 10))
-                ax = fig.add_subplot(111, projection='3d')
-
-                for class_id in np.unique(graph_predicted_classes):
-                    class_points = graph_positions[graph_predicted_classes == class_id]
-                    ax.scatter(class_points[:, 0], class_points[:, 1], class_points[:, 2],
-                               s=1, label=f"Class {class_id}")
-
-                ax.set_title(f"Segmentation Graph {i} - View: {view_name}")
-                ax.set_xlabel("X Position")
-                ax.set_ylabel("Y Position")
-                ax.set_zlabel("Z Position")
-                ax.legend()
-                ax.set_box_aspect([1, 1, 1])
-
-                if elev is not None and azim is not None:
-                    ax.view_init(elev=elev, azim=azim)
-
-                filename = f"segmentation_graph_{i}_{view_name}.png"
-                plt.savefig(filename)
-                wandb.log({f"Segmentation Graph {i} - {view_name}": wandb.Image(filename)})
-                plt.close()
 
     def on_validation_epoch_end(self):
         # Convert outputs to CPU numpy arrays
@@ -133,48 +93,25 @@ class LightningModuleClassification(L.LightningModule):
         # Calcul des métriques IoU et DSC
         iou_scores = []
         dice_scores = []
+        # Métriques
+        iou_scores, dice_scores = [], []
         for i in range(self.output_size):
-            # On trouve les indices où les vraies classes sont égales à i
-            true_class_mask = targets_np == i
-            pred_class_mask = predicted_classes_np == i
+            true_mask = targets_np == i
+            pred_mask = predicted_classes_np == i
 
-            intersection = np.sum(true_class_mask & pred_class_mask)
-            union = np.sum(true_class_mask | pred_class_mask)
+            intersection = np.sum(true_mask & pred_mask)
+            union = np.sum(true_mask | pred_mask)
             iou = intersection / union if union > 0 else 0.0
-            iou_scores.append(iou)
+            dice = 2 * intersection / (np.sum(true_mask) + np.sum(pred_mask)) if (np.sum(true_mask) + np.sum(pred_mask)) > 0 else 0.0
 
-            # Calcul du DSC
-            dice = 2 * intersection / (np.sum(true_class_mask) + np.sum(pred_class_mask)) if (np.sum(true_class_mask) + np.sum(pred_class_mask)) > 0 else 0.0
+            iou_scores.append(iou)
             dice_scores.append(dice)
 
-        # Calcul des intervalles de confiance CI 95% pour IoU et DSC
-        def bootstrap_ci(scores, n_iterations=1000, ci_percentile=95):
-            # Bootstrap pour calculer les intervalles de confiance
-            resampled_scores = []
-            for _ in range(n_iterations):
-                resampled = resample(scores)
-                resampled_scores.append(np.mean(resampled))
-            lower = np.percentile(resampled_scores, (100 - ci_percentile) / 2)
-            upper = np.percentile(resampled_scores, 100 - (100 - ci_percentile) / 2)
-            return lower, upper
-
-        iou_ci_lower, iou_ci_upper = bootstrap_ci(iou_scores)
-        dice_ci_lower, dice_ci_upper = bootstrap_ci(dice_scores)
-
-        # Log des métriques
-        for i in range(self.output_size):
+            # Log par classe
             wandb.log({
-                f"IoU Class {i}": iou_scores[i],
-                f"DSC Class {i}": dice_scores[i],
-                f"IoU CI 95% Class {i}": f"({iou_ci_lower:.2f}, {iou_ci_upper:.2f})",
-                f"DSC CI 95% Class {i}": f"({dice_ci_lower:.2f}, {dice_ci_upper:.2f})",
+                f"IoU/Class_{i}": iou,
+                f"DSC/Class_{i}": dice
             })
-
-        # Affichage des résultats dans le terminal
-        print("IoU per class:", iou_scores)
-        print("Dice per class:", dice_scores)
-        print(f"IoU CI 95%: ({iou_ci_lower:.2f}, {iou_ci_upper:.2f})")
-        print(f"Dice CI 95%: ({dice_ci_lower:.2f}, {dice_ci_upper:.2f})")
 
         # Confusion matrix et F1
         all_class_indices = torch.cat([predicted_classes, targets]).unique().cpu().numpy()

@@ -69,19 +69,18 @@ def main(argv):
     model_save_path = FLAGS.model_save_path
     use_edge_feature = not FLAGS.no_edge_feature
 
-
-    # XXX Change the names and the parameters to the correct ones
-
     # Get training and validation datasets
     train_dataset = SegmentationDataset(
         root_folder=parameters["dataset"]["obj_folder"],
         meta_path=parameters["dataset"]["meta_path"],
+        processing=parameters["dataset"]["processing"],
         switch_to_val=False,
     )
 
     val_dataset = SegmentationDataset(
         root_folder=parameters["dataset"]["obj_folder"],
         meta_path=parameters["dataset"]["meta_path"],
+        processing=parameters["dataset"]["processing"],
         switch_to_val=True,
     )
 
@@ -182,7 +181,6 @@ def main(argv):
         train_dataloaders=train_dataloader,
         val_dataloaders=valid_dataloader,
     )
-
 
 
 if __name__ == "__main__":

@@ -15,8 +15,10 @@ class SegmentationDataset(Dataset):
         self,
         root_folder,
         meta_path: str,
+        processing: str = "normal",
         switch_to_val: bool = False,
-        switch_to_test: bool = False,        
+        switch_to_test: bool = False,   
+
     ):
         
         if switch_to_val:
@@ -25,6 +27,7 @@ class SegmentationDataset(Dataset):
         self.npzfile_paths = []
         self.adfile_paths = []
         self.labels = []
+        self.processing = processing
 
         for file in os.listdir(root_folder):
             if file.endswith(".npz"):
@@ -86,7 +89,6 @@ class SegmentationDataset(Dataset):
         print(f"Cloud points saved to {cloud_vtk_path}")
 
 
-
     def add_encoding(self, cloud, feats, coords, K=6):
         cloud_pos = cloud.pos
 
@@ -126,12 +128,69 @@ class SegmentationDataset(Dataset):
         new_features = self.add_encoding(cloud, feats, coords_scaled, K=6)
 
         return new_features
-    
+
     def add_new_features(self, cloud, index):
         features = self.get_new_features(cloud, index)
         cloud.x = torch.cat((cloud.x, features), dim=1)
         return cloud
+    
+    def add_labels(self, cloud, coords, K=6):
+        cloud_pos = cloud.pos
+        labels = cloud.y
 
+        edge_index = knn(cloud_pos, coords, k=K)
+
+        coords_labels = torch.zeros((coords.shape[0], 1), dtype=torch.float32)
+
+        for i in range(cloud_pos.shape[0]):
+            neighbors = edge_index[1][edge_index[0] == i]
+            if neighbors.numel() > 0:
+                coords_labels[i] = labels[neighbors].mean(dim=0).round().int()
+            else:
+                coords_labels[i] = labels[i]    
+
+        return coords_labels        
+
+    def get_new_labels(self, cloud, index):
+        file_path = self.adfile_paths[index]
+        feats, coords = self.get_encoding(file_path)
+        feats = torch.tensor(feats, dtype=torch.float32)
+
+        coords[:, [1, 2]] = coords[:, [2, 1]]  # Swap Y and Z coordinates
+        coords_scaled = self.scale_pos(cloud, coords)
+        coords_scaled = torch.tensor(coords_scaled, dtype=torch.float32)
+        coords_scaled[:, 2] = -coords_scaled[:, 2]
+
+        pos_cloud = cloud.pos
+
+        cloud_centroid = pos_cloud.mean(dim=0)
+        coords_centroid = coords_scaled.mean(dim=0)
+
+        translation_vector = cloud_centroid - coords_centroid
+        coords_scaled[:, 2] += translation_vector[2]
+
+        new_labels = self.add_labels(cloud, coords_scaled, K=6)
+
+        return coords_scaled, feats, new_labels
+
+
+    def add_new_labels(self, cloud, index):
+        coords, feats, new_labels = self.get_new_labels(cloud, index)
+        data = Data(
+            x=feats, 
+            pos=coords,
+            y=new_labels,
+        )
+        return data
+
+
+    def sample_points(self, data, num_points=512):
+        if data.pos.shape[0] > num_points:
+            sample_indices = random.sample(range(data.pos.shape[0]), num_points)
+            data.x = data.x[sample_indices]
+            data.pos = data.pos[sample_indices]
+            data.y = data.y[sample_indices]
+        return data
 
     def __getitem__(self, idx):
         adfile_path = self.adfile_paths[idx]
@@ -166,14 +225,13 @@ class SegmentationDataset(Dataset):
             y=torch.tensor(labels, dtype=torch.float32),
         )
 
-        data.name = os.path.basename(adfile_path).replace(".ad", "")  # Needed for saving files
-
-        samplepoints = random.sample(range(data.pos.shape[0]), 512)
-
-        data.x = data.x[samplepoints]
-        data.pos = data.pos[samplepoints]
-        data.y = data.y[samplepoints]
-
-        data = self.add_new_features(data, idx)
+        if self.processing == "normal":
+            data = self.sample_points(data, num_points=512)
+        elif self.processing == "add_features":
+            data = self.sample_points(data, num_points=512)
+            data = self.add_new_features(data, idx)
+        elif self.processing == "add_labels":
+            data = self.add_new_labels(data, idx)
+            data = self.sample_points(data, num_points=512)
 
         return data
