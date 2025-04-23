@@ -143,7 +143,7 @@ class SegmentationDataset(Dataset):
 
         edge_index = knn(cloud_pos, coords, k=K)
 
-        coords_labels = torch.zeros((coords.shape[0], 1), dtype=torch.float32)
+        coords_labels = torch.zeros((coords.shape[0]), dtype=torch.float32)
 
         for i in range(cloud_pos.shape[0]):
             neighbors = edge_index[1][edge_index[0] == i]
