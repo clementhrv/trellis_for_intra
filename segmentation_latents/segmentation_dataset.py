@@ -193,6 +193,29 @@ class SegmentationDataset(Dataset):
 
         return coords_scaled, feats, new_labels
     
+    def add_labels_and_normals(self, cloud, index, K=6):
+        cloud_pos = cloud.pos
+        cloud_labels = cloud.y
+        cloud_normals = cloud.x
+
+        edge_index = knn(cloud_pos, cloud_pos, k=K)
+
+        coords_labels = torch.zeros((cloud_pos.shape[0]), dtype=torch.float32)
+        coords_normals = torch.zeros((cloud_pos.shape[0], 3), dtype=torch.float32)
+
+        for i in range(cloud_pos.shape[0]):
+            neighbors = edge_index[1][edge_index[0] == i]
+            if neighbors.numel() > 0:
+                coords_labels[i] = cloud_labels[neighbors].mean(dim=0).round().int()
+                coords_normals[i] = cloud_normals[neighbors].mean(dim=0)
+            else:
+                coords_labels[i] = cloud_labels[i]
+                coords_normals[i] = cloud_normals[i]
+
+        return coords_labels, coords_normals
+
+
+    
     def get_normal_label(self, cloud, index):
         file_path = self.adfile_paths[index]
         feats, coords = self.get_encoding(file_path)
@@ -210,8 +233,7 @@ class SegmentationDataset(Dataset):
         translation_vector = cloud_centroid - coords_centroid
         coords_scaled[:, 2] += translation_vector[2]
 
-        new_labels = self.add_labels(cloud, coords_scaled, K=4)
-        new_normals = self.add_normals(cloud, coords_scaled, K=5)
+        new_labels, new_normals = self.add_labels_and_normals(cloud, index, K=4)
 
         return coords_scaled, feats, new_labels, new_normals
         
@@ -264,11 +286,6 @@ class SegmentationDataset(Dataset):
                     labels.append(int(1))
 
         points = np.array(points)
-
-        # Scale points to the range [-1, 1]
-        min_vals = points.min(axis=0)
-        max_vals = points.max(axis=0)
-        points = 2 * (points - min_vals) / (max_vals - min_vals) - 1
         
         data = Data(
             x=torch.tensor(normals, dtype=torch.float32),
@@ -283,13 +300,10 @@ class SegmentationDataset(Dataset):
         features = torch.empty((feats.shape[0], 0), dtype=torch.float32)  # Create an empty tensor with 0 features
 
         if self.processing[0] == 1:
-            print('ADD 0', coords.shape[1])
             features = torch.cat((features, coords), dim=1)
         if self.processing[1] == 1:
-            print('ADD 1', new_normals.shape[1])
             features = torch.cat((features, new_normals), dim=1)
         if self.processing[2] == 1:
-            print('ADD 2', feats.shape[1])
             features = torch.cat((features, feats), dim=1)
 
         new_data = Data(
@@ -299,4 +313,4 @@ class SegmentationDataset(Dataset):
         )
         new_data = self.sample_points(new_data, num_points=self.number_of_samples)
 
-        return data
+        return new_data
