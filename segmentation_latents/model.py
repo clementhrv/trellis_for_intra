@@ -161,7 +161,7 @@ class SegmentationPointNetP2(torch.nn.Module):
         # Initialize the first SAModule
         self.sa_modules.append(
             SAModule(
-                0.2,
+                0.5,
                 0.2,
                 build_mlp(
                     3 + node_input_size,
@@ -265,7 +265,7 @@ class SegmentationPointNetP2(torch.nn.Module):
         x, pos, batch = fp_out[-1]
 
         x = self.mlp(x)
-        
+
         return x.log_softmax(dim=1)
 
 

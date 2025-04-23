@@ -2,6 +2,7 @@ import os
 import json
 from torch.utils.data import Dataset
 from torch_geometric.data import Data
+import torch_geometric.transforms as T
 import numpy as np
 import torch
 import random
@@ -17,7 +18,8 @@ class SegmentationDataset(Dataset):
         meta_path: str,
         processing: str = "normal",
         switch_to_val: bool = False,
-        switch_to_test: bool = False,   
+        switch_to_test: bool = False, 
+        number_of_samples: int = 512,  
 
     ):
         
@@ -28,6 +30,7 @@ class SegmentationDataset(Dataset):
         self.adfile_paths = []
         self.labels = []
         self.processing = processing
+        self.number_of_samples = number_of_samples
 
         for file in os.listdir(root_folder):
             if file.endswith(".npz"):
@@ -149,7 +152,24 @@ class SegmentationDataset(Dataset):
             else:
                 coords_labels[i] = labels[i]    
 
-        return coords_labels        
+        return coords_labels    
+
+    def add_normals(self, cloud, coords, K=6):
+        cloud_pos = cloud.pos
+        normals = cloud.x
+
+        edge_index = knn(cloud_pos, coords, k=K)
+
+        coords_normals = torch.zeros((coords.shape[0], 3), dtype=torch.float32)
+
+        for i in range(cloud_pos.shape[0]):
+            neighbors = edge_index[1][edge_index[0] == i]
+            if neighbors.numel() > 0:
+                coords_normals[i] = normals[neighbors].mean(dim=0)
+            else:
+                coords_normals[i] = normals[i]
+
+        return coords_normals
 
     def get_new_labels(self, cloud, index):
         file_path = self.adfile_paths[index]
@@ -174,10 +194,19 @@ class SegmentationDataset(Dataset):
         return coords_scaled, feats, new_labels
 
 
-    def add_new_labels(self, cloud, index):
+    def add_new_labels_and_features(self, cloud, index):
         coords, feats, new_labels = self.get_new_labels(cloud, index)
         data = Data(
             x=feats, 
+            pos=coords,
+            y=new_labels,
+        )
+        return data
+    
+    def add_new_labels(self, cloud, index):
+        coords, feats, new_labels = self.get_new_labels(cloud, index)
+        data= Data(
+            x=coords, 
             pos=coords,
             y=new_labels,
         )
@@ -226,12 +255,18 @@ class SegmentationDataset(Dataset):
         )
 
         if self.processing == "normal":
-            data = self.sample_points(data, num_points=512)
+            data = self.sample_points(data, num_points=self.number_of_samples)
         elif self.processing == "add_features":
-            data = self.sample_points(data, num_points=512)
+            data = self.sample_points(data, num_points=self.number_of_samples)
             data = self.add_new_features(data, idx)
         elif self.processing == "add_labels":
             data = self.add_new_labels(data, idx)
-            data = self.sample_points(data, num_points=512)
+            data = self.sample_points(data, num_points=self.number_of_samples)
+        elif self.processing == "add_labels_and_features":
+            data = self.add_new_labels_and_features(data, idx)
+            data = self.sample_points(data, num_points=self.number_of_samples)
+        
+
+        T.NormalizeScale()(data)
 
         return data

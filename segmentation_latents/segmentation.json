@@ -4,15 +4,15 @@
         "obj_folder": "dataset_intra_segmentation/training",
         "meta_path": "segmentation_latents/segmentation_meta.json",
         "khop": 1,
-        "number_of_sample": 1024,
+        "number_of_samples": 1024,
         "number_of_connections":16,
-        "processing":"normal"
+        "processing":"add_labels"
     }, 
     "model": {
         "type": "pn2",
         "hidden_layers": 4,
         "hidden_size": 64,
-        "node_input_size": 11,
+        "node_input_size": 3,
         "output_size": 2,
         "edge_input_size": 4,
         "num_heads": 4,

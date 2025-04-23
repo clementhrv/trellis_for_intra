@@ -75,6 +75,7 @@ def main(argv):
         meta_path=parameters["dataset"]["meta_path"],
         processing=parameters["dataset"]["processing"],
         switch_to_val=False,
+        number_of_samples=parameters["dataset"]["number_of_samples"],
     )
 
     val_dataset = SegmentationDataset(
@@ -82,6 +83,7 @@ def main(argv):
         meta_path=parameters["dataset"]["meta_path"],
         processing=parameters["dataset"]["processing"],
         switch_to_val=True,
+        number_of_samples=parameters["dataset"]["number_of_samples"],
     )
 
     num_workers = get_num_workers(param=parameters, default_num_workers=num_workers)
