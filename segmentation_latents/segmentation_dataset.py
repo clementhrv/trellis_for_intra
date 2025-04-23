@@ -45,12 +45,17 @@ class SegmentationDataset(Dataset):
     def __len__(self):
         return len(self.adfile_paths)
     
-    def get_encoding(self, file_name: str):
+    def get_encoding(self, file_name: str, number_of_samples: int = 512):
         file_name = file_name.replace("-_norm.ad", "_full.npz")
 
         data_npz = np.load(file_name)
         feats = data_npz['feats']
         coords = data_npz['coords']
+
+        if feats.shape[0] > number_of_samples:
+            sample_indices = random.sample(range(feats.shape[0]), number_of_samples)
+            feats = feats[sample_indices]
+            coords = coords[sample_indices]
 
         return feats, coords
     
@@ -216,9 +221,9 @@ class SegmentationDataset(Dataset):
 
 
     
-    def get_normal_label(self, cloud, index):
+    def get_normal_label(self, cloud, index, number_of_samples):
         file_path = self.adfile_paths[index]
-        feats, coords = self.get_encoding(file_path)
+        feats, coords = self.get_encoding(file_path, number_of_samples)
         feats = torch.tensor(feats, dtype=torch.float32)
 
         coords[:, [1, 2]] = coords[:, [2, 1]]
@@ -295,7 +300,7 @@ class SegmentationDataset(Dataset):
 
         T.NormalizeScale()(data)
 
-        coords, feats, new_labels, new_normals = self.get_normal_label(data, idx)
+        coords, feats, new_labels, new_normals = self.get_normal_label(data, idx, self.number_of_samples)
 
         features = torch.empty((feats.shape[0], 0), dtype=torch.float32)  # Create an empty tensor with 0 features
 
@@ -311,6 +316,5 @@ class SegmentationDataset(Dataset):
             pos=coords,
             y=new_labels,
         )
-        new_data = self.sample_points(new_data, num_points=self.number_of_samples)
 
         return new_data
