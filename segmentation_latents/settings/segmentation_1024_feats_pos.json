@@ -1,0 +1,28 @@
+{
+    "dataset": {
+        "extension": "xdmf",
+        "obj_folder": "dataset_intra_segmentation/training",
+        "meta_path": "segmentation_latents/segmentation_meta.json",
+        "khop": 1,
+        "number_of_samples": 1024,
+        "number_of_connections":16,
+        "processing":[1,0,1]
+    }, 
+    "model": {
+        "type": "pn2",
+        "hidden_layers": 4,
+        "hidden_size": 64,
+        "node_input_size": 11,
+        "output_size": 2,
+        "edge_input_size": 4,
+        "num_heads": 4,
+        "dim_model": [[[64, 128, 128], [128, 128, 256], [256, 512, 1024]], [[256, 256, 256], [128, 256, 128], [128, 128, 128]],[128, 128, 128]]
+    },
+    "index": {
+        "feature_index_start": 0,
+        "feature_index_end": 3,
+        "output_index_start": 0,
+        "output_index_end": 1,
+        "node_type_index": 1
+    }
+}

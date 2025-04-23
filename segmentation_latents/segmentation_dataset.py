@@ -16,7 +16,7 @@ class SegmentationDataset(Dataset):
         self,
         root_folder,
         meta_path: str,
-        processing: str = "normal",
+        processing: list = [1,0,0],
         switch_to_val: bool = False,
         switch_to_test: bool = False, 
         number_of_samples: int = 512,  
@@ -145,7 +145,7 @@ class SegmentationDataset(Dataset):
 
         coords_labels = torch.zeros((coords.shape[0]), dtype=torch.float32)
 
-        for i in range(cloud_pos.shape[0]):
+        for i in range(coords.shape[0]):
             neighbors = edge_index[1][edge_index[0] == i]
             if neighbors.numel() > 0:
                 coords_labels[i] = labels[neighbors].mean(dim=0).round().int()
@@ -162,7 +162,7 @@ class SegmentationDataset(Dataset):
 
         coords_normals = torch.zeros((coords.shape[0], 3), dtype=torch.float32)
 
-        for i in range(cloud_pos.shape[0]):
+        for i in range(coords.shape[0]):
             neighbors = edge_index[1][edge_index[0] == i]
             if neighbors.numel() > 0:
                 coords_normals[i] = normals[neighbors].mean(dim=0)
@@ -189,10 +189,32 @@ class SegmentationDataset(Dataset):
         translation_vector = cloud_centroid - coords_centroid
         coords_scaled[:, 2] += translation_vector[2]
 
-        new_labels = self.add_labels(cloud, coords_scaled, K=6)
+        new_labels = self.add_labels(cloud, coords_scaled, K=4)
 
         return coords_scaled, feats, new_labels
+    
+    def get_normal_label(self, cloud, index):
+        file_path = self.adfile_paths[index]
+        feats, coords = self.get_encoding(file_path)
+        feats = torch.tensor(feats, dtype=torch.float32)
 
+        coords[:, [1, 2]] = coords[:, [2, 1]]
+        coords_scaled = self.scale_pos(cloud, coords)
+        coords_scaled = torch.tensor(coords_scaled, dtype=torch.float32)
+        coords_scaled[:, 2] = -coords_scaled[:, 2]
+
+        pos_cloud = cloud.pos
+        cloud_centroid = pos_cloud.mean(dim=0)
+        coords_centroid = coords_scaled.mean(dim=0)
+
+        translation_vector = cloud_centroid - coords_centroid
+        coords_scaled[:, 2] += translation_vector[2]
+
+        new_labels = self.add_labels(cloud, coords_scaled, K=4)
+        new_normals = self.add_normals(cloud, coords_scaled, K=5)
+
+        return coords_scaled, feats, new_labels, new_normals
+        
 
     def add_new_labels_and_features(self, cloud, index):
         coords, feats, new_labels = self.get_new_labels(cloud, index)
@@ -254,19 +276,24 @@ class SegmentationDataset(Dataset):
             y=torch.tensor(labels, dtype=torch.float32),
         )
 
-        if self.processing == "normal":
-            data = self.sample_points(data, num_points=self.number_of_samples)
-        elif self.processing == "add_features":
-            data = self.sample_points(data, num_points=self.number_of_samples)
-            data = self.add_new_features(data, idx)
-        elif self.processing == "add_labels":
-            data = self.add_new_labels(data, idx)
-            data = self.sample_points(data, num_points=self.number_of_samples)
-        elif self.processing == "add_labels_and_features":
-            data = self.add_new_labels_and_features(data, idx)
-            data = self.sample_points(data, num_points=self.number_of_samples)
-        
-
         T.NormalizeScale()(data)
+
+        coords, feats, new_labels, new_normals = self.get_normal_label(data, idx)
+
+        features = torch.empty((feats.shape[0], 0), dtype=torch.float32)  # Create an empty tensor with 0 features
+
+        if self.processing[0] == 1:
+            features = torch.cat((features, coords), dim=1)
+        if self.processing[1] == 1:
+            features = torch.cat((features, new_normals), dim=1)
+        if self.processing[2] == 1:
+            features = torch.cat((features, feats), dim=1)
+
+        new_data = Data(
+            x=features,
+            pos=coords,
+            y=new_labels,
+        )
+        new_data = self.sample_points(new_data, num_points=self.number_of_samples)
 
         return data
