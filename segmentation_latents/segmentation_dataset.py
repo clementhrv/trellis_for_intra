@@ -283,10 +283,13 @@ class SegmentationDataset(Dataset):
         features = torch.empty((feats.shape[0], 0), dtype=torch.float32)  # Create an empty tensor with 0 features
 
         if self.processing[0] == 1:
+            print('ADD 0', coords.shape[1])
             features = torch.cat((features, coords), dim=1)
         if self.processing[1] == 1:
+            print('ADD 1', new_normals.shape[1])
             features = torch.cat((features, new_normals), dim=1)
         if self.processing[2] == 1:
+            print('ADD 2', feats.shape[1])
             features = torch.cat((features, feats), dim=1)
 
         new_data = Data(
