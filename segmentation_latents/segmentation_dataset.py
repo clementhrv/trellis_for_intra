@@ -193,17 +193,17 @@ class SegmentationDataset(Dataset):
 
         return coords_scaled, feats, new_labels
     
-    def add_labels_and_normals(self, cloud, index, K=6):
+    def add_labels_and_normals(self, cloud, coords, K=6):
         cloud_pos = cloud.pos
         cloud_labels = cloud.y
         cloud_normals = cloud.x
 
-        edge_index = knn(cloud_pos, cloud_pos, k=K)
+        edge_index = knn(cloud_pos, coords, k=K)
 
-        coords_labels = torch.zeros((cloud_pos.shape[0]), dtype=torch.float32)
-        coords_normals = torch.zeros((cloud_pos.shape[0], 3), dtype=torch.float32)
+        coords_labels = torch.zeros((coords.shape[0]), dtype=torch.float32)
+        coords_normals = torch.zeros((coords.shape[0], 3), dtype=torch.float32)
 
-        for i in range(cloud_pos.shape[0]):
+        for i in range(coords.shape[0]):
             neighbors = edge_index[1][edge_index[0] == i]
             if neighbors.numel() > 0:
                 coords_labels[i] = cloud_labels[neighbors].mean(dim=0).round().int()
@@ -233,7 +233,7 @@ class SegmentationDataset(Dataset):
         translation_vector = cloud_centroid - coords_centroid
         coords_scaled[:, 2] += translation_vector[2]
 
-        new_labels, new_normals = self.add_labels_and_normals(cloud, index, K=4)
+        new_labels, new_normals = self.add_labels_and_normals(cloud, coords_scaled, K=4)
 
         return coords_scaled, feats, new_labels, new_normals
         
