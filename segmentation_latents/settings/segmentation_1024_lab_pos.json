@@ -6,7 +6,7 @@
         "khop": 1,
         "number_of_samples": 1024,
         "number_of_connections":16,
-        "processing":[0,0,1]
+        "processing":[1,0,0]
     }, 
     "model": {
         "type": "pn2",

@@ -10,7 +10,7 @@ for i in {1..2}; do
         base_name=$(basename "$json_file" .json)
 
         # Construire les noms de projet et de dossier
-        project_name="${base_name}_run_${i}"
+        project_name="${base_name}_b2_do_run_${i}"
         project_folder="trellis_test_2"
 
         # Exécuter le script avec les paramètres appropriés
@@ -18,9 +18,9 @@ for i in {1..2}; do
             --training_parameters_path="$json_file" \
             --project_name="$project_name" \
             --project_folder="$project_folder" \
-            --num_epochs=50 \
-            --init_lr=0.001 \
-            --batch_size=4 \
+            --num_epochs=60 \
+            --init_lr=0.01 \
+            --batch_size=2 \
             --warmup=100 \
             --num_workers=0 \
             --prefetch_factor=0 \

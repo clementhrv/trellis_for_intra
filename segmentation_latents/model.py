@@ -82,6 +82,7 @@ class PointNetClassifier(torch.nn.Module):
         # Classifier:
         return x.log_softmax(dim=1)
 
+
 # The PointNet++ segmentation model and layer
 class SAModule(torch.nn.Module):
     def __init__(self, ratio, r, nn, number_of_connections=16):
@@ -168,6 +169,7 @@ class SegmentationPointNetP2(torch.nn.Module):
                     dim_model[0][0][0],
                     dim_model[0][0][-1],
                     len(dim_model[0][0]),
+                    dropout=0.3,
                 ),
                 number_of_connections,
             )
@@ -184,6 +186,7 @@ class SegmentationPointNetP2(torch.nn.Module):
                         dim_model[0][i][1],
                         dim_model[0][i][-1],
                         len(dim_model[0][i]),
+                        dropout=0.3,
                     ),
                     number_of_connections,
                 )
@@ -197,6 +200,7 @@ class SegmentationPointNetP2(torch.nn.Module):
                     dim_model[0][-1][1],
                     dim_model[0][-1][-1],
                     len(dim_model[0][-1]),
+                    dropout=0.3,
                 )
             )
         )
@@ -211,6 +215,7 @@ class SegmentationPointNetP2(torch.nn.Module):
                     dim_model[1][0][1],
                     dim_model[1][0][-1],
                     len(dim_model[1][0]),
+                    dropout=0.3,
                 ),
             )
         )
@@ -224,6 +229,7 @@ class SegmentationPointNetP2(torch.nn.Module):
                         dim_model[1][i][1],
                         dim_model[1][i][-1],
                         len(dim_model[1][i]),
+                        dropout=0.3,
                     ),
                 )
             )
@@ -236,6 +242,7 @@ class SegmentationPointNetP2(torch.nn.Module):
                     dim_model[1][-1][1],
                     dim_model[1][-1][-1],
                     len(dim_model[1][-1]),
+                    dropout=0.3,
                 ),
             )
         )
@@ -249,8 +256,6 @@ class SegmentationPointNetP2(torch.nn.Module):
             dropout=0.5,
             layer_norm=False,
         )
-
-        self.softmax = nn.Softmax(dim=1)
 
     def forward(self, data):
         sa0_out = [(data.x, data.pos, data.batch)]
