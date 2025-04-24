@@ -48,13 +48,13 @@ class PointNetLayer(MessagePassing):
         return self.mlp(edge_feat)
 
 
-class PointNetClassifier(torch.nn.Module):
+class PointNetSegmenter(torch.nn.Module):
     def __init__(
         self,
         node_input_size: int = 8,
         hidden_layers: int = 2,
         hidden_size: int = 64,
-        output_size: int = 2,
+        output_size: int = 2,  # nombre de classes par point
         **kwargs
     ):
         super().__init__()
@@ -67,20 +67,19 @@ class PointNetClassifier(torch.nn.Module):
             self.processer_list.append(PointNetLayer(hidden_size, hidden_size))
             self.processer_list.append(ReLU())
 
-        self.classifier = Linear(hidden_size, output_size)
+        # Segmentation head (par point)
+        self.segmentation_head = Linear(hidden_size, output_size)
 
-    def forward(self, graph=Batch) -> Tensor:
-
+    def forward(self, graph: Batch) -> Tensor:
         for layer in self.processer_list:
             graph.x = layer(graph)
 
-        # Global Pooling:
-        x = global_max_pool(graph.x, graph.batch)  # [num_examples, hidden_channels]
+        # Pas de global pooling ici
+        x = self.segmentation_head(graph.x)  # [num_points, output_size]
 
-        x = self.classifier(x)  # [num_examples, output_channels]
-
-        # Classifier:
+        # Log softmax par point (si utilisé avec NLLLoss)
         return x.log_softmax(dim=1)
+
 
 
 # The PointNet++ segmentation model and layer

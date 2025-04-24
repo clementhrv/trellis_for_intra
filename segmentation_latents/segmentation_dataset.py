@@ -20,7 +20,7 @@ class SegmentationDataset(Dataset):
         switch_to_val: bool = False,
         switch_to_test: bool = False, 
         number_of_samples: int = 512,  
-
+        number_of_connections: int = 6,
     ):
         
         if switch_to_val:
@@ -31,6 +31,7 @@ class SegmentationDataset(Dataset):
         self.labels = []
         self.processing = processing
         self.number_of_samples = number_of_samples
+        self.number_of_connections = number_of_connections
 
         for file in os.listdir(root_folder):
             if file.endswith(".npz"):
@@ -316,5 +317,7 @@ class SegmentationDataset(Dataset):
             pos=coords,
             y=new_labels,
         )
+
+        T.KNNGraph(k=self.number_of_connections)(new_data)
 
         return new_data

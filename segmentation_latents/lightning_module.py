@@ -1,6 +1,6 @@
 import lightning as L
 import torch
-from segmentation_latents.model import SegmentationPointNetP2
+from segmentation_latents.model import SegmentationPointNetP2, PointNetSegmenter
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, f1_score
@@ -36,8 +36,8 @@ class LightningModuleClassification(L.LightningModule):
 
         if model_type == "pn2":
             self.model = SegmentationPointNetP2(**model_kwargs)
-        elif model_type == "mlp":
-            self.model = ClassificationModel(**model_kwargs)
+        elif model_type == "pn":
+            self.model = PointNetSegmenter(**model_kwargs)
         else:
             raise ValueError(f"Model type {model_type} not supported.")
 

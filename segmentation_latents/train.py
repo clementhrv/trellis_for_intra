@@ -76,6 +76,7 @@ def main(argv):
         processing=parameters["dataset"]["processing"],
         switch_to_val=False,
         number_of_samples=parameters["dataset"]["number_of_samples"],
+        number_of_connections=parameters["dataset"]["number_of_connections"],
     )
 
     val_dataset = SegmentationDataset(
@@ -84,6 +85,7 @@ def main(argv):
         processing=parameters["dataset"]["processing"],
         switch_to_val=True,
         number_of_samples=parameters["dataset"]["number_of_samples"],
+        number_of_connections=parameters["dataset"]["number_of_connections"],
     )
 
     num_workers = get_num_workers(param=parameters, default_num_workers=num_workers)

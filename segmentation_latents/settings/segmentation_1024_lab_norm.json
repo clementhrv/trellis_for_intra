@@ -5,11 +5,11 @@
         "meta_path": "segmentation_latents/segmentation_meta.json",
         "khop": 1,
         "number_of_samples": 1024,
-        "number_of_connections":16,
+        "number_of_connections":10,
         "processing":[0,1,0]
     }, 
     "model": {
-        "type": "pn2",
+        "type": "pn",
         "hidden_layers": 4,
         "hidden_size": 64,
         "node_input_size": 3,
