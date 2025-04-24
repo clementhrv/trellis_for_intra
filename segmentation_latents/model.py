@@ -72,7 +72,10 @@ class PointNetSegmenter(torch.nn.Module):
 
     def forward(self, graph: Batch) -> Tensor:
         for layer in self.processer_list:
-            graph.x = layer(graph)
+            if isinstance(layer, PointNetLayer):
+                graph.x = layer(graph)
+            else:
+                graph.x = layer(graph.x)
 
         # Pas de global pooling ici
         x = self.segmentation_head(graph.x)  # [num_points, output_size]
