@@ -299,7 +299,7 @@ class SegmentationDataset(Dataset):
             y=torch.tensor(labels, dtype=torch.float32),
         )
 
-        T.NormalizeScale()(data)
+        data = T.NormalizeScale()(data)
 
         coords, feats, new_labels, new_normals = self.get_normal_label(data, idx, self.number_of_samples)
 
@@ -318,6 +318,6 @@ class SegmentationDataset(Dataset):
             y=new_labels,
         )
 
-        T.KNNGraph(k=self.number_of_connections)(new_data)
+        new_data = T.KNNGraph(k=self.number_of_connections)(new_data)
 
         return new_data
