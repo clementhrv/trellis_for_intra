@@ -19,7 +19,7 @@ for i in {1..2}; do
             --project_name="$project_name" \
             --project_folder="$project_folder" \
             --num_epochs=50 \
-            --init_lr=0.001 \
+            --init_lr=0.0005 \
             --batch_size=2 \
             --warmup=100 \
             --num_workers=0 \

@@ -6,7 +6,7 @@
         "khop": 1,
         "number_of_samples": 512,
         "number_of_connections":1,
-        "processing":[1,0,0]
+        "processing":[0,1,0]
     }, 
     "model": {
         "type": "pn2",
@@ -16,7 +16,7 @@
         "output_size": 2,
         "edge_input_size": 4,
         "num_heads": 4,
-        "dim_model": [[[16, 32, 32], [32, 64, 256], [256, 512, 1024]], [[512, 256, 64], [32, 64, 32], [32, 32, 32]], [32, 16, 16]]
+        "dim_model": [[[8, 8, 16], [16, 16, 32], [32, 32, 64]], [[32, 32, 32], [16, 32, 16], [16, 16, 16]], [16, 8, 4]]
     },
     "index": {
         "feature_index_start": 0,

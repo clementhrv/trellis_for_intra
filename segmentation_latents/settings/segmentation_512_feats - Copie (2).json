@@ -6,17 +6,17 @@
         "khop": 1,
         "number_of_samples": 512,
         "number_of_connections":1,
-        "processing":[1,0,0]
+        "processing":[0,0,1]
     }, 
     "model": {
         "type": "pn2",
         "hidden_layers": 4,
         "hidden_size": 32,
-        "node_input_size": 3,
+        "node_input_size": 8,
         "output_size": 2,
         "edge_input_size": 4,
         "num_heads": 4,
-        "dim_model": [[[16, 32, 32], [32, 64, 256], [256, 512, 1024]], [[512, 256, 64], [32, 64, 32], [32, 32, 32]], [32, 16, 16]]
+        "dim_model": [[[16, 16, 32], [32, 64, 128], [128, 128, 256]], [[128, 64, 64], [64, 64, 32], [32, 32, 32]], [32, 32, 16]]
     },
     "index": {
         "feature_index_start": 0,
