@@ -41,7 +41,8 @@ class LightningModuleClassification(L.LightningModule):
         else:
             raise ValueError(f"Model type {model_type} not supported.")
 
-        self.loss = torch.nn.NLLLoss()  # Utilisation de NLLLoss avec log_softmax
+        class_weights = torch.tensor([1.0, 3.0], device=device)  # Poids pour chaque classe
+        self.loss = torch.nn.NLLLoss(weight=class_weights)  # Utilisation de NLLLoss avec log_softmax
 
         self.learning_rate = learning_rate
         self.num_steps = num_steps
