@@ -164,7 +164,7 @@ class SegmentationPointNetP2(torch.nn.Module):
         # Initialize the first SAModule
         self.sa_modules.append(
             SAModule(
-                0.2,
+                0.5,
                 0.2,
                 build_mlp(
                     3 + node_input_size,
@@ -178,21 +178,22 @@ class SegmentationPointNetP2(torch.nn.Module):
         )
 
         # Add the intermediate SAModules
-        for i in range(1, len(dim_model[0]) - 1):
-            self.sa_modules.append(
-                SAModule(
-                    0.25,
-                    0.4,
-                    build_mlp(
-                        dim_model[0][i - 1][-1] + 3,
-                        dim_model[0][i][1],
-                        dim_model[0][i][-1],
-                        len(dim_model[0][i]),
-                        dropout=0.3,
-                    ),
-                    number_of_connections,
+        if len(dim_model[0]) > 2:
+            for i in range(1, len(dim_model[0]) - 1):
+                self.sa_modules.append(
+                    SAModule(
+                        0.25,
+                        0.4,
+                        build_mlp(
+                            dim_model[0][i - 1][-1] + 3,
+                            dim_model[0][i][1],
+                            dim_model[0][i][-1],
+                            len(dim_model[0][i]),
+                            dropout=0.3,
+                        ),
+                        number_of_connections,
+                    )
                 )
-            )
 
         # Add the final GlobalSAModule
         self.sa_modules.append(
@@ -222,19 +223,20 @@ class SegmentationPointNetP2(torch.nn.Module):
             )
         )
 
-        for i in range(1, len(dim_model[1]) - 1):
-            self.fp_modules.append(
-                FPModule(
-                    3,
-                    build_mlp(
-                        dim_model[1][i - 1][-1] + dim_model[1][i][0],
-                        dim_model[1][i][1],
-                        dim_model[1][i][-1],
-                        len(dim_model[1][i]),
-                        dropout=0.3,
-                    ),
+        if len(dim_model[1]) > 2:
+            for i in range(1, len(dim_model[1]) - 1):
+                self.fp_modules.append(
+                    FPModule(
+                        3,
+                        build_mlp(
+                            dim_model[1][i - 1][-1] + dim_model[1][i][0],
+                            dim_model[1][i][1],
+                            dim_model[1][i][-1],
+                            len(dim_model[1][i]),
+                            dropout=0.3,
+                        ),
+                    )
                 )
-            )
 
         self.fp_modules.append(
             FPModule(
