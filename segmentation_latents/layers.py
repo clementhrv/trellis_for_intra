@@ -83,7 +83,7 @@ def build_mlp(
             output layer. Defaults to True.
         dropout (float, optional): Dropout probability. Defaults to 0.0.
         plain_last (bool, optional): Whether to exclude activation and dropout
-            from the last layer. Defaults to False.
+            from the last layer. Defaults to True.
 
     Returns:
         nn.Module: The constructed MLP model.

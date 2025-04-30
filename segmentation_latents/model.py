@@ -171,7 +171,8 @@ class SegmentationPointNetP2(torch.nn.Module):
                     dim_model[0][0][0],
                     dim_model[0][0][-1],
                     len(dim_model[0][0]),
-                    dropout=0.3,
+                    dropout=0.5,
+                    plain_last=False,
                 ),
                 number_of_connections,
             )
@@ -189,7 +190,8 @@ class SegmentationPointNetP2(torch.nn.Module):
                             dim_model[0][i][1],
                             dim_model[0][i][-1],
                             len(dim_model[0][i]),
-                            dropout=0.3,
+                            dropout=0.5,
+                            plain_last=False,
                         ),
                         number_of_connections,
                     )
@@ -203,7 +205,8 @@ class SegmentationPointNetP2(torch.nn.Module):
                     dim_model[0][-1][1],
                     dim_model[0][-1][-1],
                     len(dim_model[0][-1]),
-                    dropout=0.3,
+                    dropout=0.5,
+                    plain_last=False,
                 )
             )
         )
@@ -218,7 +221,8 @@ class SegmentationPointNetP2(torch.nn.Module):
                     dim_model[1][0][1],
                     dim_model[1][0][-1],
                     len(dim_model[1][0]),
-                    dropout=0.3,
+                    dropout=0.5,
+                    plain_last=False,
                 ),
             )
         )
@@ -233,7 +237,8 @@ class SegmentationPointNetP2(torch.nn.Module):
                             dim_model[1][i][1],
                             dim_model[1][i][-1],
                             len(dim_model[1][i]),
-                            dropout=0.3,
+                            dropout=0.5,
+                            plain_last=False,
                         ),
                     )
                 )
@@ -246,7 +251,8 @@ class SegmentationPointNetP2(torch.nn.Module):
                     dim_model[1][-1][1],
                     dim_model[1][-1][-1],
                     len(dim_model[1][-1]),
-                    dropout=0.3,
+                    dropout=0.5,
+                    plain_last=False,
                 ),
             )
         )
@@ -258,6 +264,7 @@ class SegmentationPointNetP2(torch.nn.Module):
             output_size,
             len(dim_model[-1])+1,
             dropout=0.5,
+            plain_last=False,
             layer_norm=False,
         )
 
