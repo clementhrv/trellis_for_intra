@@ -171,7 +171,7 @@ class SegmentationPointNetP2(torch.nn.Module):
                     dim_model[0][0][0],
                     dim_model[0][0][-1],
                     len(dim_model[0][0]),
-                    dropout=0.5,
+                    dropout=0.1,
                     plain_last=False,
                 ),
                 number_of_connections,
@@ -190,7 +190,7 @@ class SegmentationPointNetP2(torch.nn.Module):
                             dim_model[0][i][1],
                             dim_model[0][i][-1],
                             len(dim_model[0][i]),
-                            dropout=0.5,
+                            dropout=0.1,
                             plain_last=False,
                         ),
                         number_of_connections,
@@ -205,7 +205,7 @@ class SegmentationPointNetP2(torch.nn.Module):
                     dim_model[0][-1][1],
                     dim_model[0][-1][-1],
                     len(dim_model[0][-1]),
-                    dropout=0.5,
+                    dropout=0.1,
                     plain_last=False,
                 )
             )
@@ -215,13 +215,13 @@ class SegmentationPointNetP2(torch.nn.Module):
 
         self.fp_modules.append(
             FPModule(
-                1,
+                16,
                 build_mlp(
                     dim_model[0][-1][-1] + dim_model[1][0][0],
                     dim_model[1][0][1],
                     dim_model[1][0][-1],
                     len(dim_model[1][0]),
-                    dropout=0.5,
+                    dropout=0.1,
                     plain_last=False,
                 ),
             )
@@ -231,13 +231,13 @@ class SegmentationPointNetP2(torch.nn.Module):
             for i in range(1, len(dim_model[1]) - 1):
                 self.fp_modules.append(
                     FPModule(
-                        3,
+                        16,
                         build_mlp(
                             dim_model[1][i - 1][-1] + dim_model[1][i][0],
                             dim_model[1][i][1],
                             dim_model[1][i][-1],
                             len(dim_model[1][i]),
-                            dropout=0.5,
+                            dropout=0.1,
                             plain_last=False,
                         ),
                     )
@@ -245,13 +245,13 @@ class SegmentationPointNetP2(torch.nn.Module):
 
         self.fp_modules.append(
             FPModule(
-                3,
+                16,
                 build_mlp(
                     dim_model[1][-2][-1] + node_input_size,
                     dim_model[1][-1][1],
                     dim_model[1][-1][-1],
                     len(dim_model[1][-1]),
-                    dropout=0.5,
+                    dropout=0.1,
                     plain_last=False,
                 ),
             )
@@ -263,7 +263,7 @@ class SegmentationPointNetP2(torch.nn.Module):
             dim_model[-1][1],
             output_size,
             len(dim_model[-1])+1,
-            dropout=0.5,
+            dropout=0.1,
             plain_last=False,
             layer_norm=False,
         )
