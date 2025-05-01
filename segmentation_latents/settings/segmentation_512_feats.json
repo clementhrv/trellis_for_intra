@@ -5,7 +5,7 @@
         "meta_path": "segmentation_latents/segmentation_meta.json",
         "khop": 1,
         "number_of_samples": 512,
-        "number_of_connections":1,
+        "number_of_connections":16,
         "processing":[0,0,1]
     }, 
     "model": {
