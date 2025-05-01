@@ -18,9 +18,9 @@ for i in {1..2}; do
             --training_parameters_path="$json_file" \
             --project_name="$project_name" \
             --project_folder="$project_folder" \
-            --num_epochs=50 \
+            --num_epochs=200 \
             --init_lr=0.001 \
-            --batch_size=2 \
+            --batch_size=8 \
             --warmup=100 \
             --num_workers=0 \
             --prefetch_factor=0 \
