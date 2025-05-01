@@ -87,7 +87,7 @@ class PointNetSegmenter(torch.nn.Module):
 
 # The PointNet++ segmentation model and layer
 class SAModule(torch.nn.Module):
-    def __init__(self, ratio, r, nn, number_of_connections=16):
+    def __init__(self, ratio, r, nn, number_of_connections=64):
         super().__init__()
         self.ratio = ratio
         self.r = r
@@ -113,7 +113,6 @@ class SAModule(torch.nn.Module):
         pos, batch = pos[idx], batch[idx]
         return x, pos, batch
 
-
 class GlobalSAModule(torch.nn.Module):
     def __init__(self, net):
         super().__init__()
@@ -134,11 +133,11 @@ class FPModule(torch.nn.Module):
         self.nn = nn
 
     def forward(self, x, pos, batch, x_skip, pos_skip, batch_skip):
-        x = knn_interpolate(x, pos, pos_skip, batch, batch_skip, self.k)
+        x = knn_interpolate(x, pos, pos_skip, batch, batch_skip, k=self.k)
         if x_skip is not None:
             x = torch.cat([x, x_skip], dim=1)
         x = self.nn(x)
-        return x, pos, batch
+        return x, pos_skip, batch_skip
 
 
 class SegmentationPointNetP2(torch.nn.Module):
@@ -164,15 +163,13 @@ class SegmentationPointNetP2(torch.nn.Module):
         # Initialize the first SAModule
         self.sa_modules.append(
             SAModule(
-                0.5,
+                0.2,
                 0.2,
                 build_mlp(
                     3 + node_input_size,
                     dim_model[0][0][0],
                     dim_model[0][0][-1],
                     len(dim_model[0][0]),
-                    dropout=0.1,
-                    plain_last=False,
                 ),
                 number_of_connections,
             )
@@ -190,8 +187,6 @@ class SegmentationPointNetP2(torch.nn.Module):
                             dim_model[0][i][1],
                             dim_model[0][i][-1],
                             len(dim_model[0][i]),
-                            dropout=0.1,
-                            plain_last=False,
                         ),
                         number_of_connections,
                     )
@@ -205,8 +200,6 @@ class SegmentationPointNetP2(torch.nn.Module):
                     dim_model[0][-1][1],
                     dim_model[0][-1][-1],
                     len(dim_model[0][-1]),
-                    dropout=0.1,
-                    plain_last=False,
                 )
             )
         )
@@ -221,8 +214,6 @@ class SegmentationPointNetP2(torch.nn.Module):
                     dim_model[1][0][1],
                     dim_model[1][0][-1],
                     len(dim_model[1][0]),
-                    dropout=0.1,
-                    plain_last=False,
                 ),
             )
         )
@@ -237,8 +228,6 @@ class SegmentationPointNetP2(torch.nn.Module):
                             dim_model[1][i][1],
                             dim_model[1][i][-1],
                             len(dim_model[1][i]),
-                            dropout=0.1,
-                            plain_last=False,
                         ),
                     )
                 )
@@ -251,8 +240,6 @@ class SegmentationPointNetP2(torch.nn.Module):
                     dim_model[1][-1][1],
                     dim_model[1][-1][-1],
                     len(dim_model[1][-1]),
-                    dropout=0.1,
-                    plain_last=False,
                 ),
             )
         )
@@ -282,5 +269,6 @@ class SegmentationPointNetP2(torch.nn.Module):
         x = self.mlp(x)
 
         return x.log_softmax(dim=1)
+
 
 
