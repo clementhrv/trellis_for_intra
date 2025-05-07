@@ -1,13 +1,7 @@
 #!/bin/bash
 
-# Chemin vers le fichier JSON spécifique
-JSON_FILE="segmentation_latents/segmentation_1024_feats_test5fold.json"
-
-# Extraire le nom du fichier sans l'extension
-base_name=$(basename "$JSON_FILE" .json)
-
-# Construire les noms de projet et de dossier
-project_name="${base_name}_b2_do_run_1"
+JSON_FILE="segmentation_latents/pn2_feats_benchmark.json"
+project_name=$(basename "$JSON_FILE" .json)
 project_folder="trellis_5fold"
 
 # Exécuter le script avec les paramètres appropriés
