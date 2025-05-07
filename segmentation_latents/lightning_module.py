@@ -7,7 +7,7 @@ from sklearn.metrics import confusion_matrix, f1_score
 import wandb
 from torch_geometric.data import Batch
 from segmentation_latents.utils.scheduler import CosineWarmupScheduler
-from sklearn.utils import resample
+from sklearn.model_selection import KFold
 
 class LightningModuleClassification(L.LightningModule):
     def __init__(
@@ -16,12 +16,14 @@ class LightningModuleClassification(L.LightningModule):
         learning_rate: float,
         num_steps: int,
         warmup: int,
+        k_folds: int = 5,  # Paramètre pour la validation croisée
     ):
         super().__init__()
         self.save_hyperparameters()
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
         self.param = parameters
+        self.k_folds = k_folds  # Utilisation du nombre de plis pour la validation croisée
 
         model_type = parameters["model"]["type"]
 
@@ -51,7 +53,11 @@ class LightningModuleClassification(L.LightningModule):
         self.val_step_outputs = torch.empty(0, self.output_size, device=device)
         self.val_step_targets = torch.empty(0, device=device, dtype=torch.long)
 
-    
+        # Variables pour enregistrer les résultats moyens
+        self.fold_iou_scores = []
+        self.fold_dice_scores = []
+        self.fold_f1_scores = []
+
     def forward(self, graph: Batch):
         return self.model(graph)  # Sortie log_softmax
 
@@ -74,7 +80,6 @@ class LightningModuleClassification(L.LightningModule):
         val_loss = self.loss(pred, target)
         self.log("validation_loss", val_loss, on_step=True, on_epoch=True, prog_bar=True)
 
-
     def on_validation_epoch_end(self):
         # Convert outputs to CPU numpy arrays
         predicteds = self.val_step_outputs.cpu()
@@ -94,8 +99,6 @@ class LightningModuleClassification(L.LightningModule):
         # Calcul des métriques IoU et DSC
         iou_scores = []
         dice_scores = []
-        # Métriques
-        iou_scores, dice_scores = [], []
         for i in range(self.output_size):
             true_mask = targets_np == i
             pred_mask = predicted_classes_np == i
@@ -114,7 +117,15 @@ class LightningModuleClassification(L.LightningModule):
                 f"DSC/Class_{i}": dice
             })
 
-        # Confusion matrix et F1
+        # Enregistrement des scores pour chaque pli
+        self.fold_iou_scores.append(np.mean(iou_scores))
+        self.fold_dice_scores.append(np.mean(dice_scores))
+
+        # Compute F1 score
+        f1 = f1_score(targets_np, predicted_classes_np, average="weighted")
+        self.fold_f1_scores.append(f1)
+
+        # Confusion matrix
         all_class_indices = torch.cat([predicted_classes, targets]).unique().cpu().numpy()
         all_class_indices = np.sort(all_class_indices)
         class_names = [f"Class {int(i)}" for i in all_class_indices]
@@ -128,8 +139,6 @@ class LightningModuleClassification(L.LightningModule):
             class_names=class_names
         )})
 
-        # Compute F1 score
-        f1 = f1_score(targets_np, predicted_classes_np, average="weighted")
         self.log("val_f1_score", f1, on_step=False, on_epoch=True, prog_bar=True)
 
         # Reset for next epoch

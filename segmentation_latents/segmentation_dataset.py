@@ -21,6 +21,7 @@ class SegmentationDataset(Dataset):
         switch_to_test: bool = False, 
         number_of_samples: int = 512,  
         number_of_connections: int = 6,
+        indices = None,
     ):
         
         if switch_to_val:
@@ -32,12 +33,29 @@ class SegmentationDataset(Dataset):
         self.processing = processing
         self.number_of_samples = number_of_samples
         self.number_of_connections = number_of_connections
+        self.indices = indices
+
+        # Lister tous les fichiers
+        all_npz = []
+        all_ad = []
 
         for file in os.listdir(root_folder):
             if file.endswith(".npz"):
-                self.npzfile_paths.append(os.path.join(root_folder, file))
+                all_npz.append(os.path.join(root_folder, file))
             elif file.endswith(".ad"):
-                self.adfile_paths.append(os.path.join(root_folder, file))
+                all_ad.append(os.path.join(root_folder, file))
+
+        # Trier pour assurer le bon alignement
+        all_npz.sort()
+        all_ad.sort()
+
+        # Si indices spécifiés (KFold), ne garder que ceux-là
+        if self.indices is not None:
+            self.adfile_paths = [all_ad[i] for i in self.indices]
+            self.npzfile_paths = [all_npz[i] for i in self.indices]
+        else:
+            self.adfile_paths = all_ad
+            self.npzfile_paths = all_npz
 
         with open(meta_path, "r") as fp:
             self.meta = json.loads(fp.read())

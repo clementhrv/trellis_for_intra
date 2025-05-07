@@ -3,6 +3,7 @@ import os
 import warnings
 import wandb
 import torch
+import numpy as np
 
 from absl import app, flags
 from lightning.pytorch import Trainer
@@ -10,6 +11,7 @@ from lightning.pytorch.callbacks import LearningRateMonitor, ModelCheckpoint, Ea
 from lightning.pytorch.loggers import WandbLogger
 from loguru import logger
 from torch_geometric.loader import DataLoader
+from sklearn.model_selection import KFold  # Importer KFold pour la validation croisée
 
 from segmentation_latents.segmentation_dataset import SegmentationDataset
 from segmentation_latents.parse_parameters import get_num_workers
@@ -70,121 +72,150 @@ def main(argv):
     use_edge_feature = not FLAGS.no_edge_feature
 
     # Get training and validation datasets
-    train_dataset = SegmentationDataset(
+    dataset = SegmentationDataset(
         root_folder=parameters["dataset"]["obj_folder"],
         meta_path=parameters["dataset"]["meta_path"],
         processing=parameters["dataset"]["processing"],
-        switch_to_val=False,
-        number_of_samples=parameters["dataset"]["number_of_samples"],
-        number_of_connections=parameters["dataset"]["number_of_connections"],
-    )
-
-    val_dataset = SegmentationDataset(
-        root_folder=parameters["dataset"]["obj_folder"],
-        meta_path=parameters["dataset"]["meta_path"],
-        processing=parameters["dataset"]["processing"],
-        switch_to_val=True,
         number_of_samples=parameters["dataset"]["number_of_samples"],
         number_of_connections=parameters["dataset"]["number_of_connections"],
     )
 
     num_workers = get_num_workers(param=parameters, default_num_workers=num_workers)
 
-    train_dataloader_kwargs = {
-        "dataset": train_dataset,
-        "shuffle": True,
-        "batch_size": batch_size,
-        "num_workers": num_workers,
-    }
+    # Prepare for KFold cross-validation
+    kf = KFold(n_splits=5, shuffle=True, random_state=42)
 
-    valid_dataloader_kwargs = {
-        "dataset": val_dataset,
-        "shuffle": False,
-        "batch_size": 1,
-        "num_workers": num_workers,
-    }
+    # Lists to store final metrics for each fold
+    final_iou_scores = []
+    final_dice_scores = []
+    final_f1_scores = []
 
-    # Update arguments if num_workers > 0
-    if num_workers > 0:
-        train_dataloader_kwargs.update(
-            {
-                "prefetch_factor": prefetch_factor,
-                "persistent_workers": True,
-            }
-        )
-        valid_dataloader_kwargs.update(
-            {
-                "prefetch_factor": prefetch_factor,
-                "persistent_workers": True,
-            }
-        )
+    fold_idx = 0  # To track fold number
+    for train_idx, val_idx in kf.split(dataset):
+        logger.info(f"Training fold {fold_idx + 1}/5")
 
-    # Create DataLoaders
-    train_dataloader = DataLoader(**train_dataloader_kwargs)
-    valid_dataloader = DataLoader(**valid_dataloader_kwargs)
+        # Create train and validation subsets based on KFold split
+        train_subset = torch.utils.data.Subset(dataset, train_idx)
+        val_subset = torch.utils.data.Subset(dataset, val_idx)
 
-    # Define or resume model
-    num_steps = num_epochs * len(train_dataloader)
-
-    if model_save_path and os.path.isfile(model_save_path):
-        logger.info(f"Loading model from checkpoint: {model_save_path}")
-        lightning_module = LightningModuleClassification.load_from_checkpoint(
-            checkpoint_path=model_save_path,
-            parameters=parameters,
-            warmup=warmup,
-            learning_rate=initial_lr,
-            num_steps=num_steps,
-        )
-    else:
-        logger.info("Initializing new model")
-        lightning_module = LightningModuleClassification(
-            parameters=parameters,
-            learning_rate=initial_lr,
-            num_steps=num_steps,
-            warmup=warmup,
-        )
-
-    # Initialize WandbLogger
-    wandb_run = wandb.init(project=wandb_project_folder, name=wandb_project_name)
-    wandb_logger = WandbLogger(experiment=wandb_run)
-    checkpoint_callback = ModelCheckpoint(dirpath="checkpoints/")
-    lr_monitor = LearningRateMonitor(logging_interval="step")
-    # early_stopping_callback = EarlyStopping(monitor="Validation Loss_epoch", patience=10)
-
-    wandb_logger.experiment.config.update(
-        {
-            "architecture": parameters["model"]["type"],
-            "#_layers": parameters["model"]["hidden_layers"],
-            "#_neurons": parameters["model"]["hidden_size"],
-            "#_hops": parameters["dataset"]["khop"],
-            "max_lr": initial_lr,
+        # Create DataLoaders for each fold
+        train_dataloader_kwargs = {
+            "dataset": train_subset,
+            "shuffle": True,
             "batch_size": batch_size,
-            "dim_model": parameters["model"]["dim_model"],
+            "num_workers": num_workers,
         }
-    )
 
-    # Configure Trainer
-    trainer = Trainer(
-        accelerator="gpu" if torch.cuda.is_available() else "cpu",
-        devices=1,
-        max_epochs=num_epochs,
-        logger=wandb_logger,
-        callbacks=[
-            ColabProgressBar(),
-            checkpoint_callback,
-            lr_monitor,
-            # early_stopping_callback,
-        ],
-        log_every_n_steps=10,
-    )
+        valid_dataloader_kwargs = {
+            "dataset": val_subset,
+            "shuffle": False,
+            "batch_size": 1,
+            "num_workers": num_workers,
+        }
 
-    # Start training
-    logger.success("Starting training")
-    trainer.fit(
-        model=lightning_module,
-        train_dataloaders=train_dataloader,
-        val_dataloaders=valid_dataloader,
-    )
+        # Update arguments if num_workers > 0
+        if num_workers > 0:
+            train_dataloader_kwargs.update(
+                {
+                    "prefetch_factor": prefetch_factor,
+                    "persistent_workers": True,
+                }
+            )
+            valid_dataloader_kwargs.update(
+                {
+                    "prefetch_factor": prefetch_factor,
+                    "persistent_workers": True,
+                }
+            )
+
+        # Create DataLoader objects
+        train_dataloader = DataLoader(**train_dataloader_kwargs)
+        valid_dataloader = DataLoader(**valid_dataloader_kwargs)
+
+        # Define or resume model
+        num_steps = num_epochs * len(train_dataloader)
+
+        if model_save_path and os.path.isfile(model_save_path):
+            logger.info(f"Loading model from checkpoint: {model_save_path}")
+            lightning_module = LightningModuleClassification.load_from_checkpoint(
+                checkpoint_path=model_save_path,
+                parameters=parameters,
+                warmup=warmup,
+                learning_rate=initial_lr,
+                num_steps=num_steps,
+            )
+        else:
+            logger.info("Initializing new model")
+            lightning_module = LightningModuleClassification(
+                parameters=parameters,
+                learning_rate=initial_lr,
+                num_steps=num_steps,
+                warmup=warmup,
+            )
+
+        # Initialize WandbLogger for each fold
+        wandb_run = wandb.init(project=wandb_project_folder, name=f"fold_{fold_idx + 1}")
+        wandb_logger = WandbLogger(experiment=wandb_run)
+        checkpoint_callback = ModelCheckpoint(dirpath="checkpoints/")
+        lr_monitor = LearningRateMonitor(logging_interval="step")
+
+        wandb_logger.experiment.config.update(
+            {
+                "architecture": parameters["model"]["type"],
+                "#_layers": parameters["model"]["hidden_layers"],
+                "#_neurons": parameters["model"]["hidden_size"],
+                "#_hops": parameters["dataset"]["khop"],
+                "max_lr": initial_lr,
+                "batch_size": batch_size,
+                "dim_model": parameters["model"]["dim_model"],
+            }
+        )
+
+        # Configure Trainer
+        trainer = Trainer(
+            accelerator="gpu" if torch.cuda.is_available() else "cpu",
+            devices=1,
+            max_epochs=num_epochs,
+            logger=wandb_logger,
+            callbacks=[
+                ColabProgressBar(),
+                checkpoint_callback,
+                lr_monitor,
+            ],
+            log_every_n_steps=10,
+        )
+
+        # Start training for this fold
+        logger.success(f"Starting training for fold {fold_idx + 1}")
+        trainer.fit(
+            model=lightning_module,
+            train_dataloaders=train_dataloader,
+            val_dataloaders=valid_dataloader,
+        )
+
+        # Collect final metrics for this fold
+        final_iou_scores.append(np.mean(lightning_module.fold_iou_scores))
+        final_dice_scores.append(np.mean(lightning_module.fold_dice_scores))
+        final_f1_scores.append(np.mean(lightning_module.fold_f1_scores))
+
+        fold_idx += 1  # Increment fold index after each fold
+
+    # Calculate average metrics across all folds
+    avg_final_iou = np.mean(final_iou_scores)
+    avg_final_dice = np.mean(final_dice_scores)
+    avg_final_f1 = np.mean(final_f1_scores)
+
+    logger.success(f"5-Fold Cross-Validation Results:")
+    logger.success(f"Average IoU: {avg_final_iou:.4f}")
+    logger.success(f"Average Dice: {avg_final_dice:.4f}")
+    logger.success(f"Average F1: {avg_final_f1:.4f}")
+
+    # Optionally log final results to WandB
+    wandb.log({
+        "avg_final_iou": avg_final_iou,
+        "avg_final_dice": avg_final_dice,
+        "avg_final_f1": avg_final_f1,
+    })
 
 
 if __name__ == "__main__":
