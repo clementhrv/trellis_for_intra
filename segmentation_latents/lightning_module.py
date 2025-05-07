@@ -54,8 +54,9 @@ class LightningModuleClassification(L.LightningModule):
         self.val_step_targets = torch.empty(0, device=device, dtype=torch.long)
 
         # Variables pour enregistrer les résultats moyens
-        self.fold_iou_scores = []
-        self.fold_dice_scores = []
+        # Calcul des métriques IoU et DSC
+        self.fold_iou_scores_per_class = [[] for _ in range(self.output_size)] if not hasattr(self, 'fold_iou_scores_per_class') else self.fold_iou_scores_per_class
+        self.fold_dice_scores_per_class = [[] for _ in range(self.output_size)] if not hasattr(self, 'fold_dice_scores_per_class') else self.fold_dice_scores_per_class
         self.fold_f1_scores = []
 
     def forward(self, graph: Batch):
@@ -96,9 +97,6 @@ class LightningModuleClassification(L.LightningModule):
         targets_np = targets.numpy()
         predicted_classes_np = predicted_classes.numpy()
 
-        # Calcul des métriques IoU et DSC
-        iou_scores = []
-        dice_scores = []
         for i in range(self.output_size):
             true_mask = targets_np == i
             pred_mask = predicted_classes_np == i
@@ -108,18 +106,15 @@ class LightningModuleClassification(L.LightningModule):
             iou = intersection / union if union > 0 else 0.0
             dice = 2 * intersection / (np.sum(true_mask) + np.sum(pred_mask)) if (np.sum(true_mask) + np.sum(pred_mask)) > 0 else 0.0
 
-            iou_scores.append(iou)
-            dice_scores.append(dice)
-
             # Log par classe
             wandb.log({
-                f"IoU/Class_{i}": iou,
-                f"DSC/Class_{i}": dice
+            f"IoU/Class_{i}": iou,
+            f"DSC/Class_{i}": dice
             })
 
-        # Enregistrement des scores pour chaque pli
-        self.fold_iou_scores.append(np.mean(iou_scores))
-        self.fold_dice_scores.append(np.mean(dice_scores))
+            # Enregistrement des scores pour chaque classe
+            self.fold_iou_scores_per_class[i].append(iou)
+            self.fold_dice_scores_per_class[i].append(dice)
 
         # Compute F1 score
         f1 = f1_score(targets_np, predicted_classes_np, average="weighted")

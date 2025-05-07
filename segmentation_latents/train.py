@@ -193,28 +193,42 @@ def main(argv):
             val_dataloaders=valid_dataloader,
         )
 
-        # Collect final metrics for this fold
-        final_iou_scores.append(np.mean(lightning_module.fold_iou_scores))
-        final_dice_scores.append(np.mean(lightning_module.fold_dice_scores))
-        final_f1_scores.append(np.mean(lightning_module.fold_f1_scores))
+        # Collect final metrics for this fold (averaged over the last 3 epochs) for each class
+        avg_iou_per_class = [
+            np.mean(scores[-3:]) for scores in lightning_module.fold_iou_scores_per_class
+        ]
+        avg_dice_per_class = [
+            np.mean(scores[-3:]) for scores in lightning_module.fold_dice_scores_per_class
+        ]
+
+        # Append the averaged metrics for this fold
+        final_iou_scores.append(avg_iou_per_class)
+        final_dice_scores.append(avg_dice_per_class)
+        final_f1_scores.append(np.mean(lightning_module.fold_f1_scores[-3:]))
 
         fold_idx += 1  # Increment fold index after each fold
 
     # Calculate average metrics across all folds
-    avg_final_iou = np.mean(final_iou_scores)
-    avg_final_dice = np.mean(final_dice_scores)
+    avg_final_iou_class_0 = np.mean(final_iou_scores, axis=0)[0]
+    avg_final_iou_class_1 = np.mean(final_iou_scores, axis=0)[1]
+    avg_final_dice_class_0 = np.mean(final_dice_scores, axis=0)[0]
+    avg_final_dice_class_1 = np.mean(final_dice_scores, axis=0)[1]
     avg_final_f1 = np.mean(final_f1_scores)
 
     logger.success(f"5-Fold Cross-Validation Results:")
-    logger.success(f"Average IoU: {avg_final_iou:.4f}")
-    logger.success(f"Average Dice: {avg_final_dice:.4f}")
+    logger.success(f"Average IoU Class 0: {avg_final_iou_class_0:.4f}")
+    logger.success(f"Average IoU Class 1: {avg_final_iou_class_1:.4f}")
+    logger.success(f"Average Dice Class 0: {avg_final_dice_class_0:.4f}")
+    logger.success(f"Average Dice Class 1: {avg_final_dice_class_1:.4f}")
     logger.success(f"Average F1: {avg_final_f1:.4f}")
 
     # Optionally log final results to WandB
     wandb.log({
-        "avg_final_iou": avg_final_iou,
-        "avg_final_dice": avg_final_dice,
-        "avg_final_f1": avg_final_f1,
+        "Average IoU Class 0": avg_final_iou_class_0,
+        "Average IoU Class 1": avg_final_iou_class_1,
+        "Average Dice Class 0": avg_final_dice_class_0,
+        "Average Dice Class 1": avg_final_dice_class_1,
+        "Average F1": avg_final_f1,
     })
 
 
