@@ -92,7 +92,7 @@ def main(argv):
 
     fold_idx = 0  # To track fold number
     for train_idx, val_idx in kf.split(dataset):
-        logger.info(f"Training fold {fold_idx + 1}/5")
+        logger.info(f"Training fold {fold_idx + 1}/5 for {wandb_project_name}")
 
         # Create train and validation subsets based on KFold split
         train_subset = torch.utils.data.Subset(dataset, train_idx)
@@ -153,8 +153,13 @@ def main(argv):
                 warmup=warmup,
             )
 
-        # Initialize WandbLogger for each fold
-        wandb_run = wandb.init(project=wandb_project_folder, name=f"fold_{fold_idx + 1}")
+        wandb_run = wandb.init(
+        project=wandb_project_folder,
+        name=f"{wandb_project_name}_fold_{fold_idx + 1}",
+        tags=["5fold", f"fold_{fold_idx+1}"],
+        group=f"{wandb_project_name}_5fold"
+        )
+
         wandb_logger = WandbLogger(experiment=wandb_run)
         checkpoint_callback = ModelCheckpoint(dirpath="checkpoints/")
         lr_monitor = LearningRateMonitor(logging_interval="step")
@@ -208,6 +213,8 @@ def main(argv):
 
         fold_idx += 1  # Increment fold index after each fold
 
+        wandb_run.finish()
+
     # Calculate average metrics across all folds
     avg_final_iou_class_0 = np.mean(final_iou_scores, axis=0)[0]
     avg_final_iou_class_1 = np.mean(final_iou_scores, axis=0)[1]
@@ -222,14 +229,22 @@ def main(argv):
     logger.success(f"Average Dice Class 1: {avg_final_dice_class_1:.4f}")
     logger.success(f"Average F1: {avg_final_f1:.4f}")
 
-    # Optionally log final results to WandB
-    wandb.log({
+    summary_run = wandb.init(
+    project=wandb_project_folder,
+    name=f"{wandb_project_name}_summary",
+    tags=["5fold", "summary"],
+    group=f"{wandb_project_name}_5fold"
+    )
+
+    summary_run.log({
         "Average IoU Class 0": avg_final_iou_class_0,
         "Average IoU Class 1": avg_final_iou_class_1,
         "Average Dice Class 0": avg_final_dice_class_0,
         "Average Dice Class 1": avg_final_dice_class_1,
         "Average F1": avg_final_f1,
     })
+    summary_run.finish()
+
 
 
 if __name__ == "__main__":
