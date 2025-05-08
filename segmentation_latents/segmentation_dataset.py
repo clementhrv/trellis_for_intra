@@ -216,7 +216,7 @@ class SegmentationDataset(Dataset):
 
         data = T.NormalizeScale()(data)
 
-        coords, feats, new_labels, new_normals = self.add_normal_label(data, idx, self.number_of_samples)
+        coords, feats, new_labels, new_normals = self.add_normal_label(data, idx)
 
         features = torch.empty((feats.shape[0], 0), dtype=torch.float32)  # Create an empty tensor with 0 features
 
