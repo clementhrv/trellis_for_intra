@@ -22,6 +22,7 @@ class SegmentationDataset(Dataset):
         number_of_samples: int = 512,  
         number_of_connections: int = 6,
         indices = None,
+        cache_dir: str = "cache",
     ):
         
         if switch_to_val:
@@ -60,21 +61,20 @@ class SegmentationDataset(Dataset):
         with open(meta_path, "r") as fp:
             self.meta = json.loads(fp.read())
 
+        # Initialize caching mechanism
+        self.cache_dir = cache_dir
+        os.remove(self.cache_dir) if os.path.exists(self.cache_dir) else None
+        os.makedirs(self.cache_dir, exist_ok=True)
 
     def __len__(self):
         return len(self.adfile_paths)
     
-    def get_encoding(self, file_name: str, number_of_samples: int = 512):
+    def get_encoding(self, file_name: str):
         file_name = file_name.replace("-_norm.ad", "_full.npz")
 
         data_npz = np.load(file_name)
         feats = data_npz['feats']
         coords = data_npz['coords']
-
-        if feats.shape[0] > number_of_samples:
-            sample_indices = random.sample(range(feats.shape[0]), number_of_samples)
-            feats = feats[sample_indices]
-            coords = coords[sample_indices]
 
         return feats, coords
     
@@ -114,110 +114,9 @@ class SegmentationDataset(Dataset):
 
         print(f"Rescaled coordinates saved to {coords_vtk_path}")
         print(f"Cloud points saved to {cloud_vtk_path}")
-
-
-    def add_encoding(self, cloud, feats, coords, K=6):
-        cloud_pos = cloud.pos
-
-        edge_index = knn(coords, cloud_pos, k=K)
-
-        F = feats.shape[1]
-        cloud_features = torch.zeros((cloud_pos.shape[0], F), dtype=torch.float32)
-
-        for i in range(cloud_pos.shape[0]):
-            neighbors = edge_index[1][edge_index[0] == i]
-            if neighbors.numel() > 0:
-                cloud_features[i] = feats[neighbors].mean(dim=0)
-            else:
-                cloud_features[i] = feats[i]
-        
-        return cloud_features    
-
-        
-    def get_new_features(self, cloud, index):
-        file_path = self.adfile_paths[index]
-        feats, coords = self.get_encoding(file_path)
-        feats = torch.tensor(feats, dtype=torch.float32)
-
-        coords[:, [1, 2]] = coords[:, [2, 1]]  # Swap Y and Z coordinates
-        coords_scaled = self.scale_pos(cloud, coords)
-        coords_scaled = torch.tensor(coords_scaled, dtype=torch.float32)
-        coords_scaled[:, 2] = -coords_scaled[:, 2]
-
-        pos_cloud = cloud.pos
-
-        cloud_centroid = pos_cloud.mean(dim=0)
-        coords_centroid = coords_scaled.mean(dim=0)
-
-        translation_vector = cloud_centroid - coords_centroid
-        coords_scaled[:, 2] += translation_vector[2]
-
-        new_features = self.add_encoding(cloud, feats, coords_scaled, K=6)
-
-        return new_features
-
-    def add_new_features(self, cloud, index):
-        features = self.get_new_features(cloud, index)
-        cloud.x = torch.cat((cloud.x, features), dim=1)
-        return cloud
     
-    def add_labels(self, cloud, coords, K=6):
-        cloud_pos = cloud.pos
-        labels = cloud.y
-
-        edge_index = knn(cloud_pos, coords, k=K)
-
-        coords_labels = torch.zeros((coords.shape[0]), dtype=torch.float32)
-
-        for i in range(coords.shape[0]):
-            neighbors = edge_index[1][edge_index[0] == i]
-            if neighbors.numel() > 0:
-                coords_labels[i] = labels[neighbors].mean(dim=0).round().int()
-            else:
-                coords_labels[i] = labels[i]    
-
-        return coords_labels    
-
-    def add_normals(self, cloud, coords, K=6):
-        cloud_pos = cloud.pos
-        normals = cloud.x
-
-        edge_index = knn(cloud_pos, coords, k=K)
-
-        coords_normals = torch.zeros((coords.shape[0], 3), dtype=torch.float32)
-
-        for i in range(coords.shape[0]):
-            neighbors = edge_index[1][edge_index[0] == i]
-            if neighbors.numel() > 0:
-                coords_normals[i] = normals[neighbors].mean(dim=0)
-            else:
-                coords_normals[i] = normals[i]
-
-        return coords_normals
-
-    def get_new_labels(self, cloud, index):
-        file_path = self.adfile_paths[index]
-        feats, coords = self.get_encoding(file_path)
-        feats = torch.tensor(feats, dtype=torch.float32)
-
-        coords[:, [1, 2]] = coords[:, [2, 1]]  # Swap Y and Z coordinates
-        coords_scaled = self.scale_pos(cloud, coords)
-        coords_scaled = torch.tensor(coords_scaled, dtype=torch.float32)
-        coords_scaled[:, 2] = -coords_scaled[:, 2]
-
-        pos_cloud = cloud.pos
-
-        cloud_centroid = pos_cloud.mean(dim=0)
-        coords_centroid = coords_scaled.mean(dim=0)
-
-        translation_vector = cloud_centroid - coords_centroid
-        coords_scaled[:, 2] += translation_vector[2]
-
-        new_labels = self.add_labels(cloud, coords_scaled, K=4)
-
-        return coords_scaled, feats, new_labels
     
-    def add_labels_and_normals(self, cloud, coords, K=6):
+    def compute_labels_and_normals(self, cloud, coords, K=6):
         cloud_pos = cloud.pos
         cloud_labels = cloud.y
         cloud_normals = cloud.x
@@ -238,11 +137,9 @@ class SegmentationDataset(Dataset):
 
         return coords_labels, coords_normals
 
-
-    
-    def get_normal_label(self, cloud, index, number_of_samples):
+    def get_normal_label(self, cloud, index):
         file_path = self.adfile_paths[index]
-        feats, coords = self.get_encoding(file_path, number_of_samples)
+        feats, coords = self.get_encoding(file_path)
         feats = torch.tensor(feats, dtype=torch.float32)
 
         coords[:, [1, 2]] = coords[:, [2, 1]]
@@ -257,29 +154,29 @@ class SegmentationDataset(Dataset):
         translation_vector = cloud_centroid - coords_centroid
         coords_scaled[:, 2] += translation_vector[2]
 
-        new_labels, new_normals = self.add_labels_and_normals(cloud, coords_scaled, K=4)
+        new_labels, new_normals = self.compute_labels_and_normals(cloud, coords_scaled, K=4)
 
         return coords_scaled, feats, new_labels, new_normals
-        
-
-    def add_new_labels_and_features(self, cloud, index):
-        coords, feats, new_labels = self.get_new_labels(cloud, index)
-        data = Data(
-            x=feats, 
-            pos=coords,
-            y=new_labels,
-        )
-        return data
     
-    def add_new_labels(self, cloud, index):
-        coords, feats, new_labels = self.get_new_labels(cloud, index)
-        data= Data(
-            x=coords, 
-            pos=coords,
-            y=new_labels,
-        )
-        return data
+    def add_normal_label(self, cloud, index):
+        cache_file = os.path.join(self.cache_dir, f"feats_{index}.pt")
 
+        if os.path.exists(cache_file):
+            try:
+                cached_data = torch.load(cache_file)
+                feats = cached_data['feats']
+                new_labels = cached_data['new_labels']
+                new_normals = cached_data['new_normals']
+            except Exception as e:
+                print(f"Error loading cache file {cache_file}: {e}. Recomputing features.")
+                os.remove(cache_file)
+                feats, coords, new_labels, new_normals = self.get_normal_label(cloud, index)
+                torch.save({'feats': feats, 'new_labels': new_labels, 'new_normals': new_normals}, cache_file)
+        else:
+            feats, coords, new_labels, new_normals = self.get_normal_label(cloud, index)
+            torch.save({'feats': feats, 'new_labels': new_labels, 'new_normals': new_normals}, cache_file)
+
+        return feats, coords, new_labels, new_normals
 
     def sample_points(self, data, num_points=512):
         if data.pos.shape[0] > num_points:
@@ -319,7 +216,7 @@ class SegmentationDataset(Dataset):
 
         data = T.NormalizeScale()(data)
 
-        coords, feats, new_labels, new_normals = self.get_normal_label(data, idx, self.number_of_samples)
+        coords, feats, new_labels, new_normals = self.add_normal_label(data, idx, self.number_of_samples)
 
         features = torch.empty((feats.shape[0], 0), dtype=torch.float32)  # Create an empty tensor with 0 features
 
@@ -336,6 +233,8 @@ class SegmentationDataset(Dataset):
             y=new_labels,
         )
 
+        new_data = self.sample_points(new_data, self.number_of_samples)
+        new_data = T.NormalizeScale()(new_data)
         new_data = T.KNNGraph(k=self.number_of_connections)(new_data)
 
         return new_data
