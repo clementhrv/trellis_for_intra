@@ -168,7 +168,6 @@ class SegmentationDataset(Dataset):
                 new_labels = cached_data['new_labels']
                 new_normals = cached_data['new_normals']
             except Exception as e:
-                print(f"Error loading cache file {cache_file}: {e}. Recomputing features.")
                 os.remove(cache_file)
                 coords, feats, new_labels, new_normals = self.get_normal_label(cloud, index)
                 torch.save({'feats': feats, 'coords': coords, 'new_labels': new_labels, 'new_normals': new_normals}, cache_file)
