@@ -63,7 +63,6 @@ class SegmentationDataset(Dataset):
 
         # Initialize caching mechanism
         self.cache_dir = cache_dir
-        os.remove(self.cache_dir) if os.path.exists(self.cache_dir) else None
         os.makedirs(self.cache_dir, exist_ok=True)
 
     def __len__(self):
@@ -165,18 +164,19 @@ class SegmentationDataset(Dataset):
             try:
                 cached_data = torch.load(cache_file)
                 feats = cached_data['feats']
+                coords = cached_data['coords']
                 new_labels = cached_data['new_labels']
                 new_normals = cached_data['new_normals']
             except Exception as e:
                 print(f"Error loading cache file {cache_file}: {e}. Recomputing features.")
                 os.remove(cache_file)
-                feats, coords, new_labels, new_normals = self.get_normal_label(cloud, index)
-                torch.save({'feats': feats, 'new_labels': new_labels, 'new_normals': new_normals}, cache_file)
+                coords, feats, new_labels, new_normals = self.get_normal_label(cloud, index)
+                torch.save({'feats': feats, 'coords': coords, 'new_labels': new_labels, 'new_normals': new_normals}, cache_file)
         else:
-            feats, coords, new_labels, new_normals = self.get_normal_label(cloud, index)
-            torch.save({'feats': feats, 'new_labels': new_labels, 'new_normals': new_normals}, cache_file)
+            coords, feats, new_labels, new_normals = self.get_normal_label(cloud, index)
+            torch.save({'feats': feats, 'coords': coords, 'new_labels': new_labels, 'new_normals': new_normals}, cache_file)
 
-        return feats, coords, new_labels, new_normals
+        return coords, feats, new_labels, new_normals
 
     def sample_points(self, data, num_points=512):
         if data.pos.shape[0] > num_points:
