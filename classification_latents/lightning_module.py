@@ -137,43 +137,24 @@ class LightningModuleClassification(L.LightningModule):
         conf_matrix = confusion_matrix(target_classes, predicted_classes, labels=[0, 1])
         f1 = f1_score(target_classes, predicted_classes, average="weighted")
 
-        self.log_dict(
-            {
-                "Aneurysm True ValCM[0,0]/pred": conf_matrix[0][0],
-                "Aneurysm True ValCM[0,0]/Target": 67,
-            },
-            on_step=False,
-            on_epoch=True,
-            prog_bar=True,
-        )
-        self.log_dict(
-            {
-                "Vessel False ValCM[0,1]/pred": conf_matrix[0][1],
-                "Vessel False ValCM[0,1]/Target": 0,
-            },
-            on_step=False,
-            on_epoch=True,
-            prog_bar=True,
-        )
-        self.log_dict(
-            {
-                "Aneurysm False ValCM[1,0]/pred": conf_matrix[1][0],
-                "Aneurysm False ValCM[1,0]/Target": 0,
-            },
-            on_step=False,
-            on_epoch=True,
-            prog_bar=True,
-        )
-        self.log_dict(
-            {
-                "Vessel True ValCM[1,1]/pred": conf_matrix[1][1],
-                "Vessel True ValCM[1,1]/Target": 341,
-            },
-            on_step=False,
-            on_epoch=True,
-            prog_bar=True,
-        )
+        # Log la confusion matrix dans wandb
+        wandb.log({"Validation Confusion Matrix": wandb.plot.confusion_matrix(
+            probs=None,
+            y_true=target_classes,
+            preds=predicted_classes,
+            class_names=["Class 0", "Class 1"]
+        )})
         self.log("F1 Score Validation", f1, on_step=False, on_epoch=True, prog_bar=True)
+
+        # Compute accuracy for each class
+        class_0_mask = target_classes == 0
+        class_1_mask = target_classes == 1
+
+        accuracy_class_0 = (predicted_classes[class_0_mask] == 0).sum() / class_0_mask.sum() if class_0_mask.sum() > 0 else 0.0
+        accuracy_class_1 = (predicted_classes[class_1_mask] == 1).sum() / class_1_mask.sum() if class_1_mask.sum() > 0 else 0.0
+
+        self.log("Accuracy Class 0", accuracy_class_0, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("Accuracy Class 1", accuracy_class_1, on_step=False, on_epoch=True, prog_bar=True)
 
         # Clear stored outputs
         self.val_step_outputs.clear()
