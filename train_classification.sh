@@ -2,7 +2,7 @@
 
 JSON_FILE="classification_latents/pn2_1024feats_class.json"
 project_name=$(basename "$JSON_FILE" .json)
-project_folder="trellis_5fold"
+project_folder="trellis_5fold_classification"
 
 # Exécuter le script avec les paramètres appropriés
 python -m classification_latents.train \

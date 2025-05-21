@@ -87,7 +87,7 @@ class ClassificationDataset(Dataset):
         # Sample points
         feats, coords = self.sample_points(feats, coords, num_points=self.number_of_samples)
 
-        features = []
+        features = np.empty((feats.shape[0], 0))
         if self.processing[0] == 1:
             features = np.concatenate((features, coords), axis=1)
         if self.processing[1] == 1:
