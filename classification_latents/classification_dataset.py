@@ -71,8 +71,10 @@ class ClassificationDataset(Dataset):
     def sample_points(self, feats, coords, num_points=1024):
         if feats.shape[0] > num_points:
             sample_indices = random.sample(range(feats.shape[0]), num_points)
-            feats = feats[sample_indices]
-            coords = coords[sample_indices]
+        else:
+            sample_indices = random.choice(feats.shape[0], num_points, replace=True)
+        feats = feats[sample_indices]
+        coords = coords[sample_indices]
         return feats, coords 
     
     def __getitem__(self, idx):
