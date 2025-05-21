@@ -4,7 +4,7 @@
         "obj_folder": "dataset_classification_intra_5fold",
         "meta_path": "classification_latents/classification_meta.json",
         "khop": 1,
-        "number_of_sample": 1024,
+        "number_of_samples": 1024,
         "number_of_connections":1,
         "processing":[0,1]
     },
