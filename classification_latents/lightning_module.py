@@ -1,6 +1,6 @@
 import lightning as L
 import torch
-from classification_latents.model import ClassificationModel, ClassificationPointNetP2
+from classification_latents.model import ClassificationModel, PointNetClassifier, ClassificationPointNetP2
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, f1_score
@@ -33,6 +33,8 @@ class LightningModuleClassification(L.LightningModule):
 
         if model_type =="pn2":
             self.model = ClassificationPointNetP2(**model_kwargs) 
+        elif model_type == "pn":
+            self.model = PointNetClassifier(**model_kwargs)
         elif model_type == "mlp":
             self.model = ClassificationModel(**model_kwargs)
         else : 

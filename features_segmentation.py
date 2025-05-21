@@ -81,6 +81,58 @@ def calcul_item(dataset, idx):
     return np.array(aneu), np.array(vessel), np.array(aneu_mean), np.array(aneu_std), np.array(aneu_max), np.array(aneu_min), np.array(vessel_mean), np.array(vessel_std), np.array(vessel_max), np.array(vessel_min)
 
 
+
+def calcul_mean_std_max_min_item(dataset,idx):
+    """
+    Calculate mean, std, max, and min for a single item.
+    """
+    data = dataset[idx]
+    feats = data.x.numpy()
+    label = data.y
+
+    aneu_mean = np.mean(feats[label == 0], axis=0)
+    aneu_std = np.std(feats[label == 0], axis=0)
+    aneu_max = np.max(feats[label == 0], axis=0)
+    aneu_min = np.min(feats[label == 0], axis=0)
+
+    vessel_mean = np.mean(feats[label == 1], axis=0)
+    vessel_std = np.std(feats[label == 1], axis=0)
+    vessel_max = np.max(feats[label == 1], axis=0)
+    vessel_min = np.min(feats[label == 1], axis=0)
+
+    return aneu_mean, aneu_std, aneu_max, aneu_min, vessel_mean, vessel_std, vessel_max, vessel_min
+
+def calcul_mean_std_max_min(dataset):
+    """
+    Calculate mean, std, max, and min for the entire dataset.
+    """
+    aneu_mean = []
+    aneu_std = []
+    aneu_max = []
+    aneu_min = []
+
+    vessel_mean = []
+    vessel_std = []
+    vessel_max = []
+    vessel_min = []
+
+    for i in range(len(dataset)):
+        data = dataset[i]
+        feats = data.x.numpy()
+        label = data.y
+
+        aneu_mean.append(np.mean(feats[label == 0], axis=0))
+        aneu_std.append(np.std(feats[label == 0], axis=0))
+        aneu_max.append(np.max(feats[label == 0], axis=0))
+        aneu_min.append(np.min(feats[label == 0], axis=0))
+
+        vessel_mean.append(np.mean(feats[label == 1], axis=0))
+        vessel_std.append(np.std(feats[label == 1], axis=0))
+        vessel_max.append(np.max(feats[label == 1], axis=0))
+        vessel_min.append(np.min(feats[label == 1], axis=0))
+
+    return np.array(aneu_mean), np.array(aneu_std), np.array(aneu_max), np.array(aneu_min), np.array(vessel_mean), np.array(vessel_std), np.array(vessel_max), np.array(vessel_min)
+
 # Scatter plot for mean, std, min, and max
 def show_item(aneu_mean, aneu_std, aneu_max, aneu_min, vessel_mean, vessel_std, vessel_max, vessel_min):
     """
@@ -131,38 +183,31 @@ def show_item(aneu_mean, aneu_std, aneu_max, aneu_min, vessel_mean, vessel_std, 
     plt.tight_layout()
     plt.show()
 
-def scatter_mean(aneu, vessel):
-    aneu_mean = np.mean(aneu, axis=0)
-    vessel_mean = np.mean(vessel, axis=0)
-    aneu_std = np.std(aneu, axis=0)
-    vessel_std = np.std(vessel, axis=0)
-    aneu_max = np.max(aneu, axis=0)
-    vessel_max = np.max(vessel, axis=0)
-    aneu_min = np.min(aneu, axis=0)
-    vessel_min = np.min(vessel, axis=0)
-
-    combined_mean = np.concatenate((aneu_mean, vessel_mean))
-    combined_std = np.concatenate((aneu_std, vessel_std))
-    combined_max = np.concatenate((aneu_max, vessel_max))
-    combined_min = np.concatenate((aneu_min, vessel_min))
+def scatter_mean(dataset):
+    aneu_mean, vessel_mean, aneu_std, vessel_std, aneu_max, vessel_max, aneu_min, vessel_min = calcul_mean_std_max_min(dataset)
 
     pca_1 = PCA(n_components=2)
     pca_2 = PCA(n_components=2)
     pca_3 = PCA(n_components=2)
     pca_4 = PCA(n_components=2)
 
-    pca_result_1 = pca_1.fit_transform(combined_mean)
-    pca_result_2 = pca_2.fit_transform(combined_std)
-    pca_result_3 = pca_3.fit_transform(combined_max)
-    pca_result_4 = pca_4.fit_transform(combined_min)
-    labels = np.array([0] * len(aneu_mean) + [1] * len(vessel_mean))
+    mean = np.vstack([aneu_mean, vessel_mean])
+    std = np.vstack([aneu_std, vessel_std])
+    max_ = np.vstack([aneu_max, vessel_max])
+    min_ = np.vstack([aneu_min, vessel_min])
+
+    pca_result_1 = pca_1.fit_transform(mean)
+    pca_result_2 = pca_2.fit_transform(std)
+    pca_result_3 = pca_3.fit_transform(max_)
+    pca_result_4 = pca_4.fit_transform(min_)
+    labels = np.array([0] * len(aneu_mean) + [1] * len(vessel_mean))  # 0 for aneurysms, 1 for vessels
 
     for pca_result, title in zip(
         [pca_result_1, pca_result_2, pca_result_3, pca_result_4],
         ['PCA of Mean Features', 'PCA of Std Features', 'PCA of Max Features', 'PCA of Min Features']
     ):
         fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
+        ax = fig.add_subplot(211)
 
         for label, color, name, alpha in zip([0, 1], ['red', 'blue'], ['Aneurysms', 'Vessels'], [1.0, 0.4]):
             ax.scatter(
@@ -176,6 +221,8 @@ def scatter_mean(aneu, vessel):
         ax.set_ylabel('Principal Component 2')
         ax.legend()
         plt.show()
+
+    
   
 
 def show_pca(aneu, vessel):
@@ -204,14 +251,14 @@ def show_pca(aneu, vessel):
 
 if __name__ == "__main__":
     dataset = import_data()
-    aneu, vessel, aneu_mean, aneu_std, aneu_max, aneu_min, vessel_mean, vessel_std, vessel_max, vessel_min = calcul_dataset(dataset)
-    show_item(aneu_mean, aneu_std, aneu_max, aneu_min, vessel_mean, vessel_std, vessel_max, vessel_min)
-    show_pca(aneu, vessel)
-    scatter_mean(aneu, vessel)
-    # Example usage of calcul_item for a specific index
-    idx = 0  # Replace with the desired index
-    aneu, vessel, aneu_mean, aneu_std, aneu_max, aneu_min, vessel_mean, vessel_std, vessel_max, vessel_min = calcul_item(dataset, idx)
-    show_item(aneu_mean, aneu_std, aneu_max, aneu_min, vessel_mean, vessel_std, vessel_max, vessel_min)
-    show_pca(aneu, vessel)
+    # aneu, vessel, aneu_mean, aneu_std, aneu_max, aneu_min, vessel_mean, vessel_std, vessel_max, vessel_min = calcul_dataset(dataset)
+    # show_item(aneu_mean, aneu_std, aneu_max, aneu_min, vessel_mean, vessel_std, vessel_max, vessel_min)
+    # show_pca(aneu, vessel)
+    scatter_mean(dataset)
+    # # Example usage of calcul_item for a specific index
+    # idx = 0  # Replace with the desired index
+    # aneu, vessel, aneu_mean, aneu_std, aneu_max, aneu_min, vessel_mean, vessel_std, vessel_max, vessel_min = calcul_item(dataset, idx)
+    # show_item(aneu_mean, aneu_std, aneu_max, aneu_min, vessel_mean, vessel_std, vessel_max, vessel_min)
+    # show_pca(aneu, vessel)
 
     

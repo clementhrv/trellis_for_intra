@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn 
 from torch import Tensor
-from torch.nn import Linear, ReLU, Sequential
-from torch_geometric.nn import MLP, PointNetConv, radius, global_max_pool, fps, MessagePassing, knn_interpolate
+from torch.nn import Linear, ReLU
+from torch_geometric.nn import PointNetConv, radius, global_max_pool, fps, MessagePassing, knn_interpolate
 from torch_geometric.data import Batch
 from segmentation_latents.layers import build_mlp
 

@@ -15,7 +15,7 @@ from sklearn.model_selection import KFold  # Importer KFold pour la validation c
 
 from segmentation_latents.segmentation_dataset import SegmentationDataset
 from segmentation_latents.parse_parameters import get_num_workers
-from segmentation_latents.lightning_module import LightningModuleClassification
+from segmentation_latents.lightning_module import LightningModuleSegmentation
 from segmentation_latents.utils.progressbar import ColabProgressBar
 
 warnings.filterwarnings(
@@ -137,7 +137,7 @@ def main(argv):
 
         if model_save_path and os.path.isfile(model_save_path):
             logger.info(f"Loading model from checkpoint: {model_save_path}")
-            lightning_module = LightningModuleClassification.load_from_checkpoint(
+            lightning_module = LightningModuleSegmentation.load_from_checkpoint(
                 checkpoint_path=model_save_path,
                 parameters=parameters,
                 warmup=warmup,
@@ -146,7 +146,7 @@ def main(argv):
             )
         else:
             logger.info("Initializing new model")
-            lightning_module = LightningModuleClassification(
+            lightning_module = LightningModuleSegmentation(
                 parameters=parameters,
                 learning_rate=initial_lr,
                 num_steps=num_steps,

@@ -78,10 +78,10 @@ def show_pca(aneu_mean, aneu_std, aneu_max, aneu_min, vessel_mean, vessel_std, v
     labels = [0] * len(aneu_mean) + [1] * len(vessel_mean)  # 0 for aneurysms, 1 for vessels
 
     # Perform PCA
-    pca_1 = PCA(n_components=3)
-    pca_2 = PCA(n_components=3)
-    pca_3 = PCA(n_components=3)
-    pca_4 = PCA(n_components=3)
+    pca_1 = PCA(n_components=2)
+    pca_2 = PCA(n_components=2)
+    pca_3 = PCA(n_components=2)
+    pca_4 = PCA(n_components=2)
     pca_result_1 = pca_1.fit_transform(mean_features)
     pca_result_2 = pca_2.fit_transform(std_features)
     pca_result_3 = pca_3.fit_transform(max_features)
@@ -94,20 +94,21 @@ def show_pca(aneu_mean, aneu_std, aneu_max, aneu_min, vessel_mean, vessel_std, v
         ['PCA of Mean Features', 'PCA of Std Features', 'PCA of Max Features', 'PCA of Min Features']
     ):
         fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
+        # ax = fig.add_subplot(111, projection='3d')
+        ax = fig.add_subplot(111)
 
-        for label, color, name, alpha in zip([0, 1], ['red', 'blue'], ['Aneurysms', 'Vessels'], [1.0, 0.4]):
+        for label, color, name, alpha in zip([0, 1], ['red', 'blue'], ['Aneurysms', 'Vessels'], [0.4, 0.4]):
             ax.scatter(
                 pca_result[labels == label, 0],  # X
                 pca_result[labels == label, 1],  # Y
-                pca_result[labels == label, 2],  # Z
+                # pca_result[labels == label, 2],  # Z
                 c=color, label=name, alpha=alpha
             )
 
         ax.set_title(title)
         ax.set_xlabel('Principal Component 1')
         ax.set_ylabel('Principal Component 2')
-        ax.set_zlabel('Principal Component 3')
+        # ax.set_zlabel('Principal Component 3')
         ax.legend()
         plt.show()
 

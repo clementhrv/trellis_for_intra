@@ -7,9 +7,8 @@ from sklearn.metrics import confusion_matrix, f1_score
 import wandb
 from torch_geometric.data import Batch
 from segmentation_latents.utils.scheduler import CosineWarmupScheduler
-from sklearn.model_selection import KFold
 
-class LightningModuleClassification(L.LightningModule):
+class LightningModuleSegmentation(L.LightningModule):
     def __init__(
         self,
         parameters: dict,

@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn 
-from torch_geometric.nn import MLP, PointNetConv, radius, global_max_pool, fps
+from torch import Tensor
+from torch.nn import Linear, ReLU
+from torch_geometric.nn import MLP, PointNetConv, radius, global_max_pool, fps, MessagePassing, knn_interpolate
 from torch_geometric.data import Batch
 from classification_latents.layers import build_mlp
 
@@ -33,7 +35,83 @@ class ClassificationModel(nn.Module):
         x = self.mlp2(x)  
         
         return self.softmax(x)
-    
+
+# The PointNet classification model and layer with message passing
+class PointNetLayer(MessagePassing):
+    def __init__(self, in_channels: int, out_channels: int):
+        # Message passing with "max" aggregation.
+        super().__init__(aggr="max")
+
+        # Initialization of the MLP:
+        # Here, the number of input features correspond to the hidden
+        # node dimensionality plus point dimensionality (=3).
+        self.mlp = build_mlp(
+            in_size=in_channels + 3,
+            hidden_size=out_channels,
+            out_size=out_channels,
+            nb_of_layers=2,
+            layer_norm=False,
+        )
+
+    def forward(
+        self,
+        graph: Batch,
+    ) -> Tensor:
+        # Start propagating messages.
+        x = graph.x
+        edge_index = graph.edge_index
+        pos = graph.pos
+        return self.propagate(edge_index, h=x, pos=pos)
+
+    def message(
+        self,
+        h_j: Tensor,
+        pos_j: Tensor,
+        pos_i: Tensor,
+    ) -> Tensor:
+        # h_j: The features of neighbors as shape [num_edges, in_channels]
+        # pos_j: The position of neighbors as shape [num_edges, 3]
+        # pos_i: The central node position as shape [num_edges, 3]
+
+        edge_feat = torch.cat([h_j, pos_j - pos_i], dim=-1)
+        return self.mlp(edge_feat)
+
+
+class PointNetClassifier(torch.nn.Module):
+    def __init__(
+        self,
+        node_input_size: int = 8,
+        hidden_layers: int = 2,
+        hidden_size: int = 64,
+        output_size: int = 2,  # nombre de classes par point
+        **kwargs
+    ):
+        super().__init__()
+
+        self.processer_list = nn.ModuleList(
+            [PointNetLayer(node_input_size, hidden_size), ReLU()]
+        )
+
+        for _ in range(hidden_layers):
+            self.processer_list.append(PointNetLayer(hidden_size, hidden_size))
+            self.processer_list.append(ReLU())
+
+        
+
+    def forward(self, graph: Batch) -> Tensor:
+        for layer in self.processer_list:
+            if isinstance(layer, PointNetLayer):
+                graph.x = layer(graph)
+            else:
+                graph.x = layer(graph.x)
+
+        # Global max pooling
+
+        x = global_max_pool(graph.x, graph.batch)
+
+        # Softmax par point 
+        return x.softmax(dim=1)
+
 
 
 # The PointNet++ classification model and layer
