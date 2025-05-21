@@ -72,7 +72,7 @@ class ClassificationDataset(Dataset):
         if feats.shape[0] > num_points:
             sample_indices = random.sample(range(feats.shape[0]), num_points)
         else:
-            sample_indices = random.choice(feats.shape[0], num_points, replace=True)
+            sample_indices = np.random.choice(feats.shape[0], num_points, replace=True)
         feats = feats[sample_indices]
         coords = coords[sample_indices]
         return feats, coords 
