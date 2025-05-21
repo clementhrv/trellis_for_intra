@@ -28,7 +28,8 @@ class LightningModuleClassification(L.LightningModule):
             "node_input_size": parameters["model"]["node_input_size"],
             "dim_model": parameters["model"]["dim_model"],
             "output_size": parameters["model"]["output_size"],
-            "number_of_connections": parameters["dataset"]["number_of_connections"]
+            "number_of_connections": parameters["dataset"]["number_of_connections"],
+            "number_of_samples": parameters["dataset"]["number_of_samples"],
         }
 
         if model_type =="pn2":

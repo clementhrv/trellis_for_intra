@@ -12,11 +12,14 @@ class ClassificationModel(nn.Module):
     def __init__(
             self, 
             dim_model: list = [[8, 16, 8, 1], [1024, 256, 64, 16, 2]], 
+            number_of_samples: int = 512,
             **kwargs
     ):
         super(ClassificationModel, self).__init__()
 
         self.mlp1 = MLP(dim_model[0], act="ReLU", dropout=0.4)
+
+        dim_model[1][0] = dim_model[0][-1] * number_of_samples
 
         self.mlp2 = MLP(dim_model[1], act="ReLU", dropout=0.4)
         self.softmax = nn.Softmax(dim=1)
