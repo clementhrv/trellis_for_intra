@@ -148,8 +148,8 @@ def main(argv):
 
         # Initialize WandbLogger
         wandb_run = wandb.init(
-            project=wandb_project_name,
-            name=f"{wandb_project_folder}_fold_{fold_idx + 1}",
+            project=wandb_project_folder,
+            name=f"{wandb_project_name}_fold_{fold_idx + 1}",
             tags=[f"fold_{fold_idx + 1}", f"{wandb_project_name}"],
             group=f"{wandb_project_name}_5fold",
         )
