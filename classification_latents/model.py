@@ -99,7 +99,9 @@ class PointNetClassifier(torch.nn.Module):
             self.processer_list.append(PointNetLayer(hidden_size, hidden_size))
             self.processer_list.append(ReLU())
 
-        
+        self.classifier = Linear(hidden_size, output_size)
+
+        self.softmax = nn.Softmax(dim=1)
 
     def forward(self, graph: Batch) -> Tensor:
         for layer in self.processer_list:
@@ -108,12 +110,16 @@ class PointNetClassifier(torch.nn.Module):
             else:
                 graph.x = layer(graph.x)
 
-        # Global max pooling
+        # Global Pooling:
+        x = global_max_pool(graph.x, graph.batch)  # [num_examples, hidden_channels]
 
-        x = global_max_pool(graph.x, graph.batch)
+        x = self.classifier(x)  # [num_examples, output_channels]
 
-        # Softmax par point 
-        return x.softmax(dim=1)
+        # Classifier:
+        return self.softmax(x)
+    
+
+
 
 
 
