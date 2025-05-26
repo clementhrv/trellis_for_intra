@@ -9,9 +9,9 @@ python -m classification_latents.train \
     --training_parameters_path="$JSON_FILE" \
     --project_name="$project_name" \
     --project_folder="$project_folder" \
-    --num_epochs=200 \
+    --num_epochs=100 \
     --init_lr=0.001 \
-    --batch_size=8 \
+    --batch_size=16 \
     --warmup=100 \
     --num_workers=0 \
     --prefetch_factor=0 \

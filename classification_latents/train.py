@@ -77,6 +77,7 @@ def main(argv):
         processing=parameters["dataset"]["processing"],
         number_of_samples=parameters["dataset"]["number_of_samples"],
         number_of_connections=parameters["dataset"]["number_of_connections"],
+        model_type=parameters["model"]["type"],
     )
 
     num_workers = get_num_workers(param=parameters, default_num_workers=num_workers)

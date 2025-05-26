@@ -19,6 +19,7 @@ class ClassificationDataset(Dataset):
         number_of_connections: int = 6,
         processing: list = [1,0],
         indices = None,
+        model_type: str = "pn2",
     ):
         
         if switch_to_val:
@@ -30,6 +31,7 @@ class ClassificationDataset(Dataset):
         self.number_of_samples = number_of_samples
         self.number_of_connections = number_of_connections
         self.processing = processing
+        self.model_type = model_type
 
         self.classes = [
             d
@@ -101,7 +103,8 @@ class ClassificationDataset(Dataset):
             y=None,
         )
 
-        data = T.KNNGraph(k=self.number_of_connections)(data)
+        if self.model_type == "pn":
+            data = T.KNNGraph(k=self.number_of_connections)(data)
         
         # Set the label
         if label == 1:

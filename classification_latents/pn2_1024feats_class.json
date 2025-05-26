@@ -5,7 +5,7 @@
         "meta_path": "classification_latents/classification_meta.json",
         "khop": 1,
         "number_of_samples": 1024,
-        "number_of_connections":1,
+        "number_of_connections":16,
         "processing":[0,1]
     },
     "model": {
@@ -17,7 +17,7 @@
         "edge_input_size": 4,
         "num_heads": 4,
         "max_neighbors": 64,
-        "dim_model": [[64, 64, 64, 128],[128, 128, 128, 256],[256, 512, 512, 1024], [1024, 512, 256]]
+        "dim_model": [[64,128,128],[128,128,256],[256,512,1024],[1024,512]]
     },
     "index": {
         "feature_index_start": 0,
