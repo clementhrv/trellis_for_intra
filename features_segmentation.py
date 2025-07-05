@@ -9,7 +9,7 @@ def import_data():
     Import data from the given file paths and labels.
     """
     dataset = SegmentationDataset(
-        root_folder='dataset_intra_5fold',
+        root_folder='dataset_segmentation_intra_5fold',
         meta_path='segmentation_latents/segmentation_meta.json',
         processing=[0, 0, 1],
         number_of_samples=2048
@@ -251,10 +251,10 @@ def show_pca(aneu, vessel):
 
 if __name__ == "__main__":
     dataset = import_data()
-    # aneu, vessel, aneu_mean, aneu_std, aneu_max, aneu_min, vessel_mean, vessel_std, vessel_max, vessel_min = calcul_dataset(dataset)
-    # show_item(aneu_mean, aneu_std, aneu_max, aneu_min, vessel_mean, vessel_std, vessel_max, vessel_min)
-    # show_pca(aneu, vessel)
-    scatter_mean(dataset)
+    aneu, vessel, aneu_mean, aneu_std, aneu_max, aneu_min, vessel_mean, vessel_std, vessel_max, vessel_min = calcul_dataset(dataset)
+    show_item(aneu_mean, aneu_std, aneu_max, aneu_min, vessel_mean, vessel_std, vessel_max, vessel_min)
+    show_pca(aneu, vessel)
+    # scatter_mean(dataset)
     # # Example usage of calcul_item for a specific index
     # idx = 0  # Replace with the desired index
     # aneu, vessel, aneu_mean, aneu_std, aneu_max, aneu_min, vessel_mean, vessel_std, vessel_max, vessel_min = calcul_item(dataset, idx)
