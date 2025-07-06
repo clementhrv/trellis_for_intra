@@ -72,8 +72,8 @@ class SegmentationDataset(Dataset):
         file_name = file_name.replace("-_norm.ad", "_full.npz")
 
         data_npz = np.load(file_name)
-        feats = data_npz['feats']
-        coords = data_npz['coords']
+        feats = data_npz['patchtokens']
+        coords = data_npz['indices']
 
         return feats, coords
     
@@ -163,17 +163,17 @@ class SegmentationDataset(Dataset):
         if os.path.exists(cache_file):
             try:
                 cached_data = torch.load(cache_file)
-                feats = cached_data['feats']
-                coords = cached_data['coords']
+                feats = cached_data['patchtokens']
+                coords = cached_data['indices']
                 new_labels = cached_data['new_labels']
                 new_normals = cached_data['new_normals']
             except Exception as e:
                 os.remove(cache_file)
                 coords, feats, new_labels, new_normals = self.get_normal_label(cloud, index)
-                torch.save({'feats': feats, 'coords': coords, 'new_labels': new_labels, 'new_normals': new_normals}, cache_file)
+                torch.save({'patchtokens': feats, 'indices': coords, 'new_labels': new_labels, 'new_normals': new_normals}, cache_file)
         else:
             coords, feats, new_labels, new_normals = self.get_normal_label(cloud, index)
-            torch.save({'feats': feats, 'coords': coords, 'new_labels': new_labels, 'new_normals': new_normals}, cache_file)
+            torch.save({'patchtokens': feats, 'indices': coords, 'new_labels': new_labels, 'new_normals': new_normals}, cache_file)
 
         return coords, feats, new_labels, new_normals
 

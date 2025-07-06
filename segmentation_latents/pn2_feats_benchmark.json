@@ -12,7 +12,7 @@
         "type": "pn2",
         "hidden_layers": 4,
         "hidden_size": 32,
-        "node_input_size": 8,
+        "node_input_size": 1024,
         "output_size": 2,
         "edge_input_size": 4,
         "num_heads": 4,
