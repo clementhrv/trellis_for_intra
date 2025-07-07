@@ -4,7 +4,7 @@ set -x
 export DATASET_NAME=IntraAnn
 export DATASET_SOURCE=IntraAnn
 export OUTPUT_DIR=dataset_output_vessels
-export ROOT_FOLDER=intra_vessel_data
+export ROOT_FOLDER=intra_vessel_data/1
 export RANK=0
 export WORLD_SIZE=1600
 export MAX_WORKERS=6
