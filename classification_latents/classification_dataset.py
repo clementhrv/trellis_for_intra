@@ -85,8 +85,8 @@ class ClassificationDataset(Dataset):
         label = self.labels[idx]
         
         data_npz = np.load(file_path)
-        feats = data_npz['feats']
-        coords = data_npz['coords']
+        feats = data_npz['patchtokens']
+        coords = data_npz['indices']
 
         # Sample points
         feats, coords = self.sample_points(feats, coords, num_points=self.number_of_samples)
