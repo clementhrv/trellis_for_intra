@@ -17,6 +17,8 @@
 /wandb
 /116cases_trellis_dataset_output
 /dataset_segmentation_intra_5fold
+/dataset_classification_intra_5fold
+/dataset_classification_intra_5fold_old
 *ckpt
 
 

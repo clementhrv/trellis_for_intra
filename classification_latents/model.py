@@ -11,7 +11,7 @@ from classification_latents.layers import build_mlp
 class ClassificationModel(nn.Module):
     def __init__(
             self, 
-            dim_model: list = [[8, 16, 8, 1], [1024, 256, 64, 16, 2]], 
+            dim_model: list = [[1024, 512, 128, 32, 16, 4, 1], [1024, 256, 64, 16, 2]], 
             number_of_samples: int = 512,
             **kwargs
     ):
@@ -248,7 +248,3 @@ class ClassificationPointNetP2(torch.nn.Module):
         x = self.mlp(x)
 
         return self.softmax(x)
-
-        # return self.mlp(x).log_softmax(dim=-1)
-
-
