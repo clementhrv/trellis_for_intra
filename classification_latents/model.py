@@ -53,6 +53,7 @@ class PointNetLayer(MessagePassing):
             hidden_size=out_channels,
             out_size=out_channels,
             nb_of_layers=2,
+            dropout=0.3,
             layer_norm=False,
         )
 
@@ -192,6 +193,7 @@ class ClassificationPointNetP2(torch.nn.Module):
                     dim_model[0][0],
                     dim_model[0][-1],
                     len(dim_model[0]),
+                    dropout=0.3,
                 ),
                 number_of_connections,
             )
@@ -208,6 +210,7 @@ class ClassificationPointNetP2(torch.nn.Module):
                         dim_model[i][0],
                         dim_model[i][-1],
                         len(dim_model[i]),
+                        dropout=0.3,
                     ),
                     number_of_connections,
                 )
@@ -221,6 +224,7 @@ class ClassificationPointNetP2(torch.nn.Module):
                     dim_model[-2][0],
                     dim_model[-2][-1],
                     len(dim_model[-1]),
+                    dropout=0.3,
                 )
             )
         )

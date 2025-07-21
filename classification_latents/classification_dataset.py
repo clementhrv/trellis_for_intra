@@ -108,10 +108,10 @@ class ClassificationDataset(Dataset):
         
         # Set the label
         if label == 1:
-            data.y = torch.tensor([0, 1], dtype=torch.float32)
+            data.y = torch.tensor([1, 0], dtype=torch.float32)
 
         else:
-            data.y = torch.tensor([1, 0], dtype=torch.float32)
-       
+            data.y = torch.tensor([0, 1], dtype=torch.float32)
+
         return data
 
