@@ -1,6 +1,6 @@
 #!/bin/bash
 
-JSON_FILE="classification_latents/pn2_1024feats_class5f.json"
+JSON_FILE="classification_latents/settings/pn2_1024feats_class5f.json"
 project_name=$(basename "$JSON_FILE" .json)
 project_folder="trellis_5fold_classification"
 
