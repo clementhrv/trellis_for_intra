@@ -82,7 +82,7 @@ def main(argv):
 
     num_workers = get_num_workers(param=parameters, default_num_workers=num_workers)
 
-    kf = KFold(n_splits=5, shuffle=True, random_state=42)
+    kf = KFold(n_splits=5, shuffle=True)
 
     fold_idx = 0
 
