@@ -1,10 +1,10 @@
 set -e 
 set -x 
 
-export DATASET_NAME=IntraAnn
-export DATASET_SOURCE=IntraAnn
-export OUTPUT_DIR=dataset_output_vessels
-export ROOT_FOLDER=intra_vessel_data/1
+export DATASET_NAME=MedMNISTv2
+export DATASET_SOURCE=MedMNISTv2
+export OUTPUT_DIR=dataset_medmnist
+export ROOT_FOLDER=obj_export_medmnist
 export RANK=0
 export WORLD_SIZE=1600
 export MAX_WORKERS=6
