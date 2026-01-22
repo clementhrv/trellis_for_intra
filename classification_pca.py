@@ -48,8 +48,8 @@ def calcul(file_paths, file_labels):
 
     for file_path, file_label in zip(file_paths, file_labels):
         data_npz = np.load(file_path)
-        feats = data_npz['feats']
-        coords = data_npz['coords']
+        feats = data_npz['patchtokens']
+        coords = data_npz['indices']
 
         mean = np.mean(feats, axis=0)
         std = np.std(feats, axis=0)
@@ -68,6 +68,10 @@ def calcul(file_paths, file_labels):
             vessel_max.append(maxi)
             vessel_min.append(mini)
             vessel_label.append(file_label)
+
+    aneu_std = np.nan_to_num(np.array(aneu_std), nan=0.0, posinf=0.0, neginf=0.0)
+    vessel_std = np.nan_to_num(np.array(vessel_std), nan=0.0, posinf=0.0, neginf=0.0)
+
 
     return np.array(aneu_mean), np.array(aneu_std), np.array(aneu_max), np.array(aneu_min), np.array(aneu_label), \
            np.array(vessel_mean), np.array(vessel_std), np.array(vessel_max), np.array(vessel_min), np.array(vessel_label)
@@ -226,8 +230,8 @@ if __name__ == "__main__":
 
     pca_results = calc_pca(mean)
     pca_concat = np.concatenate(pca_results, axis=1)
-    # acc_0_list, acc_1_list, f1_list, preds_list, X, y = classify_mlp_cv(pca_concat, label, input_size=len(pca_results)*2)
-    acc_0_list, acc_1_list, f1_list, preds_list, X, y = classify_logistic_regression_cv(pca_concat, label)
+    acc_0_list, acc_1_list, f1_list, preds_list, X, y = classify_mlp_cv(pca_concat, label, input_size=len(pca_results)*2)
+    # acc_0_list, acc_1_list, f1_list, preds_list, X, y = classify_logistic_regression_cv(pca_concat, label)
 
     print(f"Class 0 Accuracy: {np.mean(acc_0_list):.4f} ± {np.std(acc_0_list):.4f}")
     print(f"Class 1 Accuracy: {np.mean(acc_1_list):.4f} ± {np.std(acc_1_list):.4f}")
